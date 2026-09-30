@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "EditorConfig.EditorConfig",
+    "mads-hartmann.bash-ide-vscode",
+    "timonwong.shellcheck",
+    "ms-python.python",
+    "redhat.vscode-yaml",
+    "github.vscode-github-actions"
+  ]
+}

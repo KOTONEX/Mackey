@@ -1,0 +1,28 @@
+# xremap 引擎二进制：由使用者自行获取（cargo install 或从发布页下载），不入库
+.vendor/
+
+# Python 字节码与本地缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# JS 类型检查（tsc 只做 noEmit；本地装 typescript 时的依赖目录）
+node_modules/
+
+# 本地运行与测试产物
+*.log
+
+# 编辑器 / 操作系统
+.DS_Store
+*~
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Kilo / Agent Manager 的本地状态（项目配置 .kilo/command、.kilo/agent 仍可入库）
+.kilo/worktrees/
+.kilo/agent-manager.json

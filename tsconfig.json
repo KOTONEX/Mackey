@@ -1,0 +1,28 @@
+{
+    // SPDX-License-Identifier: AGPL-3.0-or-later
+    // SPDX-FileCopyrightText: 2026 Mackey contributors
+    //
+    // JS 侧类型检查：不产出任何文件（noEmit），只对 extension.js 与契约测试
+    // 做 @ts-check 级校验。GNOME 运行时由 types/gjs.d.ts 提供最小类型面。
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "noEmit": true,
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "lib": ["ES2022"],
+        "types": [],
+        "strict": false,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noFallthroughCasesInSwitch": true,
+        "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true
+    },
+    "include": [
+        "extension/xremap-compat@mackey.local/extension.js",
+        "tests/verify-extension.mjs",
+        "types/**/*.d.ts"
+    ]
+}

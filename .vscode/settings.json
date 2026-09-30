@@ -1,0 +1,13 @@
+{
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.associations": {
+    "bin/mackey": "shellscript"
+  },
+  "shellcheck.enable": true,
+  "shellcheck.useWorkspaceRootAsCwd": true,
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false
+  }
+}

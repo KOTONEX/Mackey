@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Mackey contributors
+name: 持续集成
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: 静态检查与离线测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq shellcheck
+
+      - name: 安装 Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: 安装类型检查工具（mypy / tsc）
+        run: |
+          python3 -m pip install mypy
+          npm install -g typescript
+
+      - name: 类型检查（严格：工具缺失即失败）
+        run: MACKEY_TYPECHECK_STRICT=1 make typecheck
+
+      - name: 静态检查
+        run: make lint
+
+      - name: 生成/构建校验
+        run: make check
+
+      - name: 离线单元测试
+        run: make test
+
+  extension-contract:
+    name: 扩展契约测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gjs dbus-x11
+
+      - name: 扩展契约测试
+        run: dbus-run-session -- make test-contract

@@ -1,0 +1,97 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Mackey contributors
+name: 发布
+
+# 推送形如 v1.0.0 的标签时：校验 → 测试 → 打包 → 上传到对应 Release。
+# 发布说明由上一个标签以来的提交自动生成。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 构建并发布
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: 安装依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq shellcheck zip
+
+      - name: 校验标签与版本一致
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_ver="${GITHUB_REF_NAME#v}"
+          file_ver="$(tr -d '[:space:]' < VERSION)"
+          if [ "$tag_ver" != "$file_ver" ]; then
+            echo "✗ 标签 $GITHUB_REF_NAME 与 VERSION（$file_ver）不一致" >&2
+            exit 1
+          fi
+
+      - name: 静态检查
+        run: make lint
+
+      - name: 生成/构建校验
+        run: make check
+
+      - name: 离线单元测试
+        run: make test
+
+      - name: 打包
+        run: |
+          ver="$(tr -d '[:space:]' < VERSION)"
+          mkdir -p dist
+          git archive --format=tar.gz --prefix="mackey-${ver}/" -o "dist/mackey-${ver}.tar.gz" HEAD
+          git archive --format=zip  --prefix="mackey-${ver}/" -o "dist/mackey-${ver}.zip" HEAD
+          (cd "extension/xremap-compat@mackey.local" \
+             && zip -qr "../../dist/mackey-gnome-extension-${ver}.zip" .)
+          (cd dist && sha256sum ./* > "SHA256SUMS-${ver}.txt")
+          ls -l dist
+
+      - name: 上传到 Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 发布说明：上一个标签到当前标签之间的提交（含提交信息全文）。
+          prev="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          if [ -n "$prev" ]; then
+            range="${prev}..${GITHUB_REF_NAME}"
+          else
+            range="${GITHUB_REF_NAME}"
+          fi
+          {
+            git log --no-merges --reverse --pretty=format:'### %s%n%n%b' "$range"
+            if [ -n "$prev" ]; then
+              printf '\n\n**完整变更**：https://github.com/%s/compare/%s...%s\n' \
+                "$GITHUB_REPOSITORY" "$prev" "$GITHUB_REF_NAME"
+            fi
+          } > release-notes.md
+          # 重复运行先删除旧 Release，保证说明与附件始终对应当前标签。
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release delete "${GITHUB_REF_NAME}" --yes
+          fi
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "Mackey ${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md
+
+      - name: 手动触发时保留构建产物
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mackey-${{ github.run_id }}
+          path: dist/*
