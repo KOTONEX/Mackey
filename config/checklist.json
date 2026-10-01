@@ -1380,6 +1380,14 @@
       "/^(code|code-insiders|codium|com\\.visualstudio\\.code|jetbrains-.+|com\\.jetbrains\\..+|gnome-builder|org\\.gnome\\.Builder|emacs|sublime_text|zed|dev\\.zed\\.Zed)$/"
     ]
   },
+  "swallow_terminal": {
+    "note": "终端配置档里的第二层替换：吞掉物理 Ctrl+Shift+C / Ctrl+Shift+V，终端里复制/粘贴只保留 ⌘C/⌘V。⌘C/⌘V 的输出正是这两个组合，但它走引擎合成路径——xremap 不读自己合成的按键，所以不受影响；只作用于终端配置档，其余应用原样放行。不带 Shift 的 Ctrl+V 特意不吞：readline 的 quoted-insert 等仍可用；若你的终端用 Ctrl+V 直接粘贴、希望禁掉，把 C-v 加进 triggers 即可。",
+    "enabled": true,
+    "triggers": [
+      "C-S-c",
+      "C-S-v"
+    ]
+  },
   "sweep": {
     "note": "显式条目之外的 ⌘+字母/数字组合，做「泛化翻译」⌘X→Ctrl+X，与 GNOME 已占用键位自动互斥；exclude_triggers 可点名排除（当前排除 ⌘U：Ctrl+U 在 GtkEntry/GtkText 里是「清空输入框」）。终端配置档不参与泛化（安全第一）。",
     "enabled": true,

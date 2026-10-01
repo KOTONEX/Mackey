@@ -134,6 +134,13 @@ class SwallowSpec(TypedDict, total=False):
     except_apps: list[str]
 
 
+class TerminalSwallowSpec(TypedDict, total=False):
+    """终端配置档内额外吞掉的组合（例如物理 Ctrl+Shift+C/V）。"""
+
+    enabled: bool
+    triggers: list[str]
+
+
 class ChecklistMeta(TypedDict):
     swallow_key: str
 
@@ -144,6 +151,7 @@ class Checklist(TypedDict):
     profiles: dict[str, ChecklistProfile]
     relocations: list[RelocationDef]
     swallow_ctrl: SwallowSpec
+    swallow_terminal: TerminalSwallowSpec
     sweep: ChecklistSweep
 
 
@@ -654,7 +662,8 @@ def load_migrations(backup_path: Path, table: dict[str, str]) -> list[Migration]
 
 def render_markdown(entries: list[ChecklistEntry], plan: list[RelocationPlan],
                     rows: list[BindingRow], migrations: list[Migration],
-                    swallow_spec: SwallowSpec) -> str:
+                    swallow_spec: SwallowSpec,
+                    terminal_swallow_spec: TerminalSwallowSpec) -> str:
     """渲染文档：先按归属（macOS / GNOME 默认）分类，再逐键展开。"""
     reloc_ids = {p["triggered_by"] for p in plan if p["triggered_by"]}
     plan_from: dict[str, str] = {}
@@ -806,6 +815,17 @@ def render_markdown(entries: list[ChecklistEntry], plan: list[RelocationPlan],
     else:
         lines.append("未启用（保持叠加：⌘ 与 Ctrl 两套都可用）。")
 
+    terminal_swallow_triggers = [norm(t) for t in terminal_swallow_spec.get("triggers", [])]
+    if terminal_swallow_spec.get("enabled") and terminal_swallow_triggers:
+        lines += [
+            "",
+            f"终端配置档里另有 **{len(terminal_swallow_triggers)}** 个组合被吞掉（`swallow_terminal`）："
+            + "、".join(f"`{pretty(t)}`" for t in terminal_swallow_triggers)
+            + " —— 终端里复制/粘贴只保留 `⌘C`/`⌘V`。"
+            "其中 `⌃⇧C`/`⌃⇧V` 正是 ⌘C/⌘V 的输出，但走的是引擎合成路径（xremap 不读自己合成的按键），"
+            "所以 ⌘ 路径不受影响；其它应用里这些组合原样放行。",
+        ]
+
     lines += ["", "## 六、需要迁移的 GNOME 键位", ""]
     if plan:
         lines += ["| GNOME 功能 | 原按键 | 迁移到 | 为谁让路 |", "|---|---|---|---|"]
@@ -924,6 +944,8 @@ def main(argv: list[str] | None = None) -> int:
     # ---- 校验键名 ----
     swallow_spec = checklist.get("swallow_ctrl", {})
     swallow_triggers = [norm(t) for t in swallow_spec.get("triggers", [])]
+    terminal_swallow_spec = checklist.get("swallow_terminal", {})
+    terminal_swallow_triggers = [norm(t) for t in terminal_swallow_spec.get("triggers", [])]
     all_names: set[str] = set()
     for e in entries:
         if e.get("trigger"):
@@ -933,6 +955,7 @@ def main(argv: list[str] | None = None) -> int:
                 all_names.update(norm(x.strip()) for x in item.split(","))
     all_names.add(norm(checklist["meta"]["swallow_key"]))
     all_names.update(swallow_triggers)
+    all_names.update(terminal_swallow_triggers)
     bad_names = check_key_names(all_names)
     if bad_names:
         print("✗ 非法的键名（会被引擎拒绝）：", file=sys.stderr)
@@ -947,6 +970,8 @@ def main(argv: list[str] | None = None) -> int:
     consuming = {norm(e["trigger"]) for e in entries if e.get("trigger") and e.get("targets")}
     if swallow_spec.get("enabled"):
         consuming |= set(swallow_triggers)
+    if terminal_swallow_spec.get("enabled"):
+        consuming |= set(terminal_swallow_triggers)
     clashes = sorted(relocation_targets & consuming)
     if clashes:
         print("✗ 迁移目标与清单触发键冲突（GNOME 功能会被吃掉）：", file=sys.stderr)
@@ -1009,6 +1034,15 @@ def main(argv: list[str] | None = None) -> int:
         "application": {"only": checklist["profiles"]["terminal"]["match"]},
         "remap": terminal_map,
     }))
+    if terminal_swallow_spec.get("enabled") and terminal_swallow_triggers:
+        # 只作用于终端：物理 Ctrl+Shift+C/V 被吞掉，终端里复制/粘贴只走 ⌘C/⌘V。
+        # ⌘C/⌘V 合成出的 Ctrl+Shift+C/V 不在拦截范围内（引擎不读自己合成的按键）；
+        # Ctrl+V 特意不吞，保留 readline 的 quoted-insert。
+        keymaps.append(with_device({
+            "name": "swallow-terminal：终端里吞掉 Ctrl+Shift+C/V（复制/粘贴只认 ⌘C/⌘V）",
+            "application": {"only": checklist["profiles"]["terminal"]["match"]},
+            "remap": {trigger: norm(swallow) for trigger in terminal_swallow_triggers},
+        }))
     keymaps.append(with_device({
         "name": "files：文件管理器语义不同（⌘⌫=废纸篓、⌘I=属性）",
         "application": {"only": checklist["profiles"]["files"]["match"]},
@@ -1050,7 +1084,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"GNOME 已占用   : {len(occupied)} 个加速键（探测自 dconf；已执行迁移 {len(migrations)} 条）")
     print(f"冲突条目       : {len(conflicts)} 条；需要迁移 GNOME 键位 {len(plan)} 条")
     print(f"归属分类       : " + "、".join(f"{k}={v}" for k, v in sorted(basis_stats.items())))
-    print(f"替换模式       : 吞掉 {len(swallow_triggers) if swallow_spec.get('enabled') else 0} 个 Linux Ctrl 组合（终端配置档例外）")
+    swallow_desc = (f"吞掉 {len(swallow_triggers) if swallow_spec.get('enabled') else 0} 个 Linux Ctrl 组合"
+                    "（终端配置档例外）")
+    if terminal_swallow_spec.get("enabled") and terminal_swallow_triggers:
+        swallow_desc += f"；终端内另吞 {len(terminal_swallow_triggers)} 个物理组合"
+    print(f"替换模式       : {swallow_desc}")
     print(f"状态分布       : " + "、".join(f"{k}={v}" for k, v in sorted(stats.items())))
     print(f"终端专用映射   : {len(terminal_entries)} 条；文件管理器 {len(files_entries)} 条")
 
@@ -1066,7 +1104,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_docs:
         docs = Path(args.docs)
         docs.parent.mkdir(parents=True, exist_ok=True)
-        docs.write_text(render_markdown(entries, plan, rows, migrations, swallow_spec),
+        docs.write_text(render_markdown(entries, plan, rows, migrations, swallow_spec,
+                                        terminal_swallow_spec),
                         encoding="utf-8")
         written.append(docs)
     print("\n已写入：\n" + "\n".join(f"  {p}" for p in written))

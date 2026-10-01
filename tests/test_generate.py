@@ -87,6 +87,13 @@ check("例外包含终端配置档", "terminal" in swallow.get("except_profiles"
 check("例外包含内嵌终端应用（VS Code 等）",
       any("code" in m for m in swallow.get("except_apps", [])))
 
+# 4d2) 终端内第二层替换：物理 Ctrl+Shift+C/V 被吞掉，复制/粘贴只认 ⌘C/⌘V
+# 不带 Shift 的 Ctrl+V 特意不吞（readline 的 quoted-insert 仍可用）
+term_swallow = checklist.get("swallow_terminal", {})
+check("终端替换模式已启用并覆盖 Ctrl+Shift+C/V（且不含 Ctrl+V）",
+      bool(term_swallow.get("enabled")) and
+      {generate.norm(t) for t in term_swallow.get("triggers", [])} == {"C-S-C", "C-S-V"})
+
 # 4e) 终端吞键与新增键位（本轮修复）
 for eid in ("split-editor", "properties", "open", "find-next", "find-prev"):
     check(f"{eid} 在终端里吞掉", by_id[eid]["targets"].get("terminal") == "F24")
@@ -199,12 +206,15 @@ finally:
 
 # 5) 离线渲染：两张分类表都在，计数与清单一致
 entries = list(checklist["entries"]) + sweep
-doc = generate.render_markdown(entries, [], [], [], checklist.get("swallow_ctrl", {}))
+doc = generate.render_markdown(entries, [], [], [], checklist.get("swallow_ctrl", {}),
+                               checklist.get("swallow_terminal", {}))
 macos = [e for e in checklist["entries"] if e["basis"] == "macos"]
 gnome = [e for e in checklist["entries"] if e["basis"] == "gnome"]
 check("文档含「遵循 macOS」表", "## 一、遵循 macOS 的键位" in doc)
 check("文档含「遵循 GNOME 默认」表", "## 二、遵循 GNOME 默认的键位" in doc)
 check("文档含「替换模式」一节", "## 五、替换模式" in doc)
+check("文档说明终端内吞掉 Ctrl+V / Ctrl+Shift+C/V",
+      "终端配置档里另有" in doc and "`swallow_terminal`" in doc)
 check("文档计数与清单一致",
       f"遵循 macOS **{len(macos)}** 条" in doc and f"遵循 GNOME 默认 **{len(gnome)}** 条" in doc)
 
@@ -228,6 +238,7 @@ with tempfile.TemporaryDirectory() as tmp:
             remaps = {name: km.get("remap", {}) for name, km in by_name.items()}
             swallow_nots = by_name.get("swallow", {}).get("application", {}).get("not", [])
             sweep_nots = by_name.get("generic-sweep", {}).get("application", {}).get("not", [])
+            terminal_only = by_name.get("swallow-terminal", {}).get("application", {}).get("only", [])
             swallow_ok = (
                 remaps.get("swallow", {}).get("C-C") == "F24"
                 and "C-C" not in remaps.get("generic", {})
@@ -235,6 +246,12 @@ with tempfile.TemporaryDirectory() as tmp:
                 and "C-C" not in remaps.get("terminal", {})
                 and remaps.get("generic", {}).get("SUPER-C") == "C-C"
                 and remaps.get("terminal", {}).get("SUPER-C") == "C-S-C"
+                and remaps.get("swallow-terminal", {}).get("C-S-C") == "F24"
+                and remaps.get("swallow-terminal", {}).get("C-S-V") == "F24"
+                and "C-V" not in remaps.get("swallow-terminal", {})
+                and "C-S-C" not in remaps.get("terminal", {})
+                and "C-S-V" not in remaps.get("generic", {})
+                and any("Terminal" in m for m in terminal_only)
                 and remaps.get("generic", {}).get("S-SUPER-3") == "PRINT"
                 and remaps.get("generic", {}).get("S-SUPER-4") == "S-PRINT"
                 and remaps.get("generic", {}).get("S-SUPER-5") == "A-PRINT"
