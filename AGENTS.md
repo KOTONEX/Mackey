@@ -6,7 +6,7 @@
 
 在 GNOME（Wayland）上把 macOS 的 ⌘/⌥ 组合翻译成当前应用在 Linux 下的等价按键。
 引擎是 xremap（evdev→uinput），按应用分流时经 socket 询问 `tools/focusd.py`，
-焦点来自 GNOME 扩展 `xremap-compat@mackey.local` 的 D-Bus。
+焦点来自 GNOME 扩展 `mackey-focus@kotonex` 的 D-Bus。
 
 ## 目录
 
@@ -20,7 +20,7 @@ tools/generate.py                  清单 + dconf 探测 → xremap 配置 / 迁
 tools/fetch-engine.py              按指令集架构下载 gnome 特性的 xremap 最新发布版本（XDG 落点）
 tools/focusd.py                    焦点上报桥（D-Bus → xremap socket 协议）
 tools/detect-keyboard.py           识别主键盘并建议 modifier_layout
-extension/xremap-compat@…/         最小 GNOME 扩展：只报焦点窗口
+extension/mackey-focus@…/          最小 GNOME 扩展：只报焦点窗口
 .github/workflows/                 CI（静态检查 + 单元测试 + 扩展契约）与发布（标签自动构建）
 tests/fake_keyboard.py             uinput 虚拟键盘（自测用）
 tests/test_focusd.py               focusd 离线单元测试（不连 D-Bus）

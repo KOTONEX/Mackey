@@ -9,6 +9,12 @@
 
 （暂无）
 
+## [1.3.0] - 2026-10-01
+
+- GNOME 扩展 ID 改为 `mackey-focus@kotonex`（D-Bus 契约 `com.k0kubun.Xremap` 不变）；
+  安装与卸载会自动禁用并清理旧 ID `xremap-compat@mackey.local`，避免新旧两版抢占
+  同一个 D-Bus 名。
+
 ## [1.2.0] - 2026-10-01
 
 - 明确只支持 GNOME Wayland：`fetch-engine` 固定下载 `gnome` 特性，不再识别桌面/会话

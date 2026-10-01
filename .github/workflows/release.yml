@@ -57,7 +57,7 @@ jobs:
           mkdir -p dist
           git archive --format=tar.gz --prefix="mackey-${ver}/" -o "dist/mackey-${ver}.tar.gz" HEAD
           git archive --format=zip  --prefix="mackey-${ver}/" -o "dist/mackey-${ver}.zip" HEAD
-          (cd "extension/xremap-compat@mackey.local" \
+          (cd "extension/mackey-focus@kotonex" \
              && zip -qr "../../dist/mackey-gnome-extension-${ver}.zip" .)
           (cd dist && sha256sum ./* > "SHA256SUMS-${ver}.txt")
           ls -l dist

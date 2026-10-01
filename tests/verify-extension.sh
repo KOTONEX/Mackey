@@ -6,7 +6,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UUID="xremap-compat@mackey.local"
+UUID="mackey-focus@kotonex"
 WORK=$(mktemp -d /tmp/mackey-ext.XXXXXX)
 trap 'rm -rf "$WORK"' EXIT
 

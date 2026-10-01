@@ -11,7 +11,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UUID="xremap-compat@mackey.local"
+UUID="mackey-focus@kotonex"
+LEGACY_UUID="xremap-compat@mackey.local"
 SANDBOX="$(mktemp -d "$HOME/.mackey-idem-test.XXXXXX")"
 HB="$SANDBOX/home"
 STUBS="$SANDBOX/stubs"
@@ -136,6 +137,8 @@ ln -sf ../mackey-engine.service "$UNIT_DIR/default.target.wants/mackey-engine.se
 [[ -L "$UNIT_DIR/default.target.wants/mackey-engine.service" ]] || fail "测试自身没造出自启软链"
 touch "$HB/run/mackey-focus.sock"
 echo 'stale' > "$EXT_DIR/stale.js"
+mkdir -p "$(dirname "$EXT_DIR")/$LEGACY_UUID"
+echo '// old' > "$(dirname "$EXT_DIR")/$LEGACY_UUID/extension.js"
 echo '// broken' > "$EXT_DIR/extension.js"
 python3 - "$HB/.config/mackey/config.json" <<'PY'
 import json
@@ -167,6 +170,7 @@ else
     fail "自启软链仍在"
 fi
 [[ ! -e "$EXT_DIR/stale.js" ]] && ok "扩展目录陈旧文件已清理" || fail "扩展目录仍有陈旧文件"
+[[ ! -e "$(dirname "$EXT_DIR")/$LEGACY_UUID" ]] && ok "改名前的旧扩展已被清理" || fail "旧扩展目录仍在"
 grep -q 'STALE' "$ENGINE_UNIT" && fail "unit 仍含旧内容" || ok "unit 已按干净安装重写"
 
 # ---- 场景 C：旧配置损坏时也应收敛到干净安装的结果 ----

@@ -14,11 +14,14 @@
 # 架构：
 #   物理键盘 → xremap(evdev→uinput) → GNOME/应用
 #                 ↑ 需要「按应用区分」时通过 socket 问 focusd
-#                   focusd ← D-Bus ← gnome-shell 里的 xremap-compat 扩展
+#                   focusd ← D-Bus ← gnome-shell 里的 mackey-focus 扩展
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UUID="xremap-compat@mackey.local"
+UUID="mackey-focus@kotonex"
+# 改名前的历史 UUID：安装/卸载时一并禁用并清理，避免新旧两版同时导出
+# com.k0kubun.Xremap 而抢占同一个 D-Bus 名。
+LEGACY_UUIDS=("xremap-compat@mackey.local")
 CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/mackey"
 DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/mackey"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/mackey"
@@ -316,6 +319,7 @@ cmd_install() {
     rm -rf "$EXT_DIR"
     cp -r "$ROOT/extension/$UUID" "$EXT_DIR" || die "扩展安装失败：$ROOT/extension/$UUID → $EXT_DIR"
     ok "扩展已安装：$EXT_DIR"
+    remove_legacy_extensions
 
     # 2) 焦点桥 + 引擎的用户服务
     local focusd_unit engine_unit
@@ -396,6 +400,11 @@ cmd_uninstall() {
         "$LAUNCHER"
         "$EXT_DIR" "$DATA_DIR" "$CACHE_DIR" "$STATE_DIR" "$SOCKET"
     )
+    local legacy_uuid legacy_dir
+    for legacy_uuid in "${LEGACY_UUIDS[@]}"; do
+        legacy_dir="$(dirname "$EXT_DIR")/$legacy_uuid"
+        [[ "$legacy_uuid" == "$UUID" || ! -e "$legacy_dir" ]] || targets+=("$legacy_dir")
+    done
     [[ $purge -eq 1 ]] && targets+=("$CONF_DIR")
 
     if [[ $dry -eq 1 ]]; then
@@ -436,6 +445,7 @@ cmd_uninstall() {
     rm -rf "$EXT_DIR"
     cmd_forget_extension
     ok "扩展已删除"
+    remove_legacy_extensions
 
     # 只删除确实指向本仓库的入口，避免误删别人的同名文件
     if [[ -f "$LAUNCHER" ]] && grep -qF "$ROOT/bin/mackey" "$LAUNCHER"; then
@@ -467,7 +477,7 @@ cmd_uninstall() {
 # 只删目录而不摘这项，GNOME 侧仍留着一条指向不存在扩展的记录。
 cmd_forget_extension() {
     command -v gsettings >/dev/null 2>&1 || return 0
-    python3 - "$UUID" <<'PY'
+    python3 - "${1:-$UUID}" <<'PY'
 import re
 import subprocess
 import sys
@@ -490,6 +500,25 @@ for schema_key in ("org.gnome.shell enabled-extensions",
 PY
 }
 
+# 旧版扩展（改名前的 UUID）：先请 GNOME Shell 卸载，再摘启用记录、删目录。
+remove_legacy_extensions() {
+    local ext_root uuid dir
+    ext_root="$(dirname "$EXT_DIR")"
+    for uuid in "${LEGACY_UUIDS[@]}"; do
+        [[ "$uuid" == "$UUID" ]] && continue
+        dir="$ext_root/$uuid"
+        if command -v gnome-extensions >/dev/null 2>&1; then
+            gnome-extensions disable "$uuid" 2>/dev/null || true
+        fi
+        cmd_forget_extension "$uuid"
+        if [[ -e "$dir" ]]; then
+            guard_home_path "$dir"
+            rm -rf "$dir"
+            ok "已清理旧扩展：$uuid（改名前的遗留）"
+        fi
+    done
+}
+
 cmd_enable() {
     session_env
     refuse_x11_session || return 1
@@ -502,7 +531,7 @@ cmd_enable() {
         err "焦点来源不可用，已拒绝启动焦点桥与引擎（这是保护，不是故障）"
         dim "  原因：无法读到当前焦点应用 → xremap 的按应用分流会失效 →"
         dim "  终端里的 ⌘C 会退化成 Ctrl+C（SIGINT，杀掉正在跑的进程）。"
-        dim "  处理：重新登录让 xremap-compat 扩展被 GNOME 加载（Wayland 下新扩展必须重登），"
+        dim "  处理：重新登录让 Mackey 焦点桥扩展被 GNOME 加载（Wayland 下新扩展必须重登），"
         dim "  或启用任意焦点上报扩展（如 focused-window-dbus）。然后 mackey doctor 应为绿色。"
         systemctl --user disable --now mackey-focusd.service mackey-engine.service 2>/dev/null || true
         cmd_status
@@ -647,8 +676,8 @@ cmd_doctor() {
     # 4) 扩展 + 焦点桥（决定「终端 vs 应用」能不能区分）
     if [[ -d "$EXT_DIR" ]]; then
         local state; state="$(LC_ALL=C gnome-extensions info "$UUID" 2>/dev/null | awk -F': ' '/State/{print $2}')"
-        [[ "$state" == "ACTIVE" ]] && ok "扩展 xremap-compat：ACTIVE" \
-            || { warn "扩展 xremap-compat：$state（新装扩展需要重新登录才会被 GNOME 扫描到）"; problems=$((problems+1)); }
+        [[ "$state" == "ACTIVE" ]] && ok "Mackey 焦点桥扩展：ACTIVE" \
+            || { warn "Mackey 焦点桥扩展：$state（新装扩展需要重新登录才会被 GNOME 扫描到）"; problems=$((problems+1)); }
     else
         warn "扩展未安装：先 mackey install，再重新登录"
         problems=$((problems+1))
@@ -657,7 +686,7 @@ cmd_doctor() {
     if focus_out="$(python3 "$ROOT/tools/focusd.py" --test 2>/dev/null)" && [[ -n "$focus_out" ]]; then
         ok "焦点来源：$(printf '%s' "$focus_out" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("wm_class") or "(空)")')"
     elif python3 "$ROOT/tools/focusd.py" --test --backend focused-window >/dev/null 2>&1; then
-        ok "焦点来源：第三方焦点扩展可用（xremap-compat 未加载也不影响）"
+        ok "焦点来源：第三方焦点扩展可用（Mackey 焦点桥未加载也不影响）"
     else
         err "焦点来源：不可用 → xremap 会打印 supported: false，终端特殊映射全部失效（⌘C 会变成 SIGINT！）"
         problems=$((problems+1))

@@ -23,7 +23,7 @@ focusd 做两件事：
 后端
 ----
   k0kubun         : org.gnome.Shell /com/k0kubun/Xremap          com.k0kubun.Xremap.ActiveWindow
-                    （本仓库自带 extension/xremap-compat@mackey.local 提供）
+                    （本仓库自带 extension/mackey-focus@kotonex 提供）
   focused-window  : org.gnome.Shell /org/gnome/shell/extensions/FocusedWindow
                     org.gnome.shell.extensions.FocusedWindow.Get
                     （flexagoon/focused-window-dbus、ickyicky/window-calls 一类扩展提供）
@@ -64,7 +64,7 @@ BACKENDS: dict[str, BackendSpec] = {
         "path": "/com/k0kubun/Xremap",
         "iface": "com.k0kubun.Xremap",
         "method": "ActiveWindow",
-        "hint": "自带的 xremap-compat 扩展（需要重启会话后才会被 GNOME 加载）",
+        "hint": "自带的 mackey-focus 扩展（需要重启会话后才会被 GNOME 加载）",
     },
     "focused-window": {
         "bus": "org.gnome.Shell",
@@ -291,7 +291,7 @@ def main() -> int:
 
     backend = pick_backend(args.backend)
     if not backend:
-        log("✗ 没有可用的焦点来源；请先安装 xremap-compat 扩展并重启会话，"
+        log("✗ 没有可用的焦点来源；请先安装 mackey-focus 扩展并重启会话，"
             "或安装/启用任意焦点上报扩展")
         return 1
 

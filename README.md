@@ -32,7 +32,7 @@ Mackey 按焦点应用分三套映射：
 
 ```
 物理键盘 ──evdev──▶ xremap ──uinput──▶ GNOME / 应用
-                     │ 需要按应用区分时 → focusd（socket）─D-Bus→ xremap-compat 扩展（上报焦点）
+                     │ 需要按应用区分时 → focusd（socket）─D-Bus→ mackey-focus 扩展（上报焦点）
                      └ modmap 负责把 ⌘/⌥ 摆到 macOS 的物理位置（可选）
 ```
 
@@ -92,7 +92,7 @@ sudo usermod -aG input "$USER"
 | 引擎二进制（`fetch-engine` 下载） | `${XDG_DATA_HOME:-~/.local/share}/mackey/bin/xremap` |
 | 下载与解压的中间产物 | `${XDG_CACHE_HOME:-~/.cache}/mackey/` |
 | 安装记录（标签 / 来源 URL / sha256） | `${XDG_STATE_HOME:-~/.local/state}/mackey/engine.json` |
-| GNOME 扩展 | `${XDG_DATA_HOME:-~/.local/share}/gnome-shell/extensions/xremap-compat@mackey.local` |
+| GNOME 扩展 | `${XDG_DATA_HOME:-~/.local/share}/gnome-shell/extensions/mackey-focus@kotonex` |
 | systemd 用户服务 | `${XDG_CONFIG_HOME:-~/.config}/systemd/user/mackey-{focusd,engine}.service` |
 | 焦点桥 socket | `${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mackey-focus.sock` |
 
@@ -143,7 +143,7 @@ tools/generate.py                  清单 + dconf 探测 → xremap 配置 / 迁
 tools/fetch-engine.py              按指令集架构下载 gnome 特性的 xremap 最新发布版本（XDG 落点）
 tools/focusd.py                    焦点上报桥（把任意焦点来源翻译成 xremap 的 socket 协议）
 tools/detect-keyboard.py           识别主键盘并建议 modifier_layout
-extension/xremap-compat@…/         最小 GNOME 扩展：只报焦点窗口，不抓键、不注入
+extension/mackey-focus@…/          最小 GNOME 扩展：只报焦点窗口，不抓键、不注入
 .github/workflows/                 CI（静态检查 + 单元测试 + 扩展契约）与发布（标签自动构建）
 tests/fake_keyboard.py             uinput 虚拟键盘（自测用，不碰真实键盘）
 tests/test_focusd.py               focusd 离线单元测试（不连 D-Bus）

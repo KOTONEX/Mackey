@@ -10,7 +10,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UUID="xremap-compat@mackey.local"
+UUID="mackey-focus@kotonex"
+LEGACY_UUID="xremap-compat@mackey.local"
 SANDBOX="$(mktemp -d "$HOME/.mackey-uninstall-test.XXXXXX")"
 cleanup() { rm -rf "$SANDBOX"; }
 trap cleanup EXIT
@@ -53,6 +54,7 @@ mkdir -p \
     "$HB/.config/systemd/user/default.target.wants" \
     "$HB/.local/share/mackey/bin" \
     "$HB/.local/share/gnome-shell/extensions/$UUID" \
+    "$HB/.local/share/gnome-shell/extensions/$LEGACY_UUID" \
     "$HB/.cache/mackey/downloads" \
     "$HB/.local/state/mackey" \
     "$HB/run"
@@ -78,6 +80,7 @@ ln -s ../mackey-focusd.service "$HB/.config/systemd/user/default.target.wants/ma
 printf '\x7fELF' > "$HB/.local/share/mackey/bin/xremap"
 chmod +x "$HB/.local/share/mackey/bin/xremap"
 echo '//' > "$HB/.local/share/gnome-shell/extensions/$UUID/extension.js"
+echo '// old' > "$HB/.local/share/gnome-shell/extensions/$LEGACY_UUID/extension.js"
 echo 'zip' > "$HB/.cache/mackey/downloads/xremap.zip"
 echo '{}' > "$HB/.local/state/mackey/engine.json"
 printf '#!/usr/bin/env bash\nexec "%s/bin/mackey" "$@"\n' "$ROOT" > "$HB/.local/bin/mackey"
@@ -90,6 +93,7 @@ TARGETS=(
     "$HB/.config/systemd/user/default.target.wants/mackey-focusd.service"
     "$HB/.local/bin/mackey"
     "$HB/.local/share/gnome-shell/extensions/$UUID"
+    "$HB/.local/share/gnome-shell/extensions/$LEGACY_UUID"
     "$HB/.local/share/mackey"
     "$HB/.cache/mackey"
     "$HB/.local/state/mackey"

@@ -21,7 +21,7 @@
         "skipLibCheck": true
     },
     "include": [
-        "extension/xremap-compat@mackey.local/extension.js",
+        "extension/mackey-focus@kotonex/extension.js",
         "tests/verify-extension.mjs",
         "types/**/*.d.ts"
     ]
