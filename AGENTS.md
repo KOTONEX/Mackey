@@ -4,7 +4,7 @@
 
 ## 项目一句话
 
-在 GNOME（Wayland/X11）上把 macOS 的 ⌘/⌥ 组合翻译成当前应用在 Linux 下的等价按键。
+在 GNOME（Wayland）上把 macOS 的 ⌘/⌥ 组合翻译成当前应用在 Linux 下的等价按键。
 引擎是 xremap（evdev→uinput），按应用分流时经 socket 询问 `tools/focusd.py`，
 焦点来自 GNOME 扩展 `xremap-compat@mackey.local` 的 D-Bus。
 
@@ -17,7 +17,7 @@ VERSION                            版本号（mackey version 读取它）
 bin/mackey                         主命令（bash），所有子命令的唯一入口
 config/checklist.json              行为清单 = 唯一事实源
 tools/generate.py                  清单 + dconf 探测 → xremap 配置 / 迁移计划 / 行为清单文档
-tools/fetch-engine.py              按指令集架构 + 桌面下载 xremap 最新发布版本（XDG 落点）
+tools/fetch-engine.py              按指令集架构下载 gnome 特性的 xremap 最新发布版本（XDG 落点）
 tools/focusd.py                    焦点上报桥（D-Bus → xremap socket 协议）
 tools/detect-keyboard.py           识别主键盘并建议 modifier_layout
 extension/xremap-compat@…/         最小 GNOME 扩展：只报焦点窗口
@@ -25,9 +25,9 @@ extension/xremap-compat@…/         最小 GNOME 扩展：只报焦点窗口
 tests/fake_keyboard.py             uinput 虚拟键盘（自测用）
 tests/test_focusd.py               focusd 离线单元测试（不连 D-Bus）
 tests/test_generate.py             生成器离线单元测试（basis 分类 / 文档渲染 / 完整生成）
-tests/test_fetch_engine.py         引擎下载器离线单元测试（指令集架构/桌面映射、zip 校验、原子安装）
+tests/test_fetch_engine.py         引擎下载器离线单元测试（指令集架构/会话映射、zip 校验、原子安装）
 tests/test-uninstall-cleanup.sh    隔离带验证卸载清理（沙箱 HOME + 桩 systemctl/gsettings）
-tests/test-install-idempotency.sh  隔离带验证安装幂等（干净安装 vs 旧状态重装，逐字节比较）
+tests/test-install-idempotency.sh  隔离带验证安装幂等（非 GNOME/X11 拒绝 + 干净安装 vs 旧状态重装）
 tests/e2e-app-match.sh             端到端「焦点桥 → xremap 按应用分流」
 tests/e2e-swallow-exempt.sh        端到端验证替换模式的例外（终端/IDE 保留 Ctrl+C）
 tests/verify-extension.sh          隔离带验证扩展契约（真实 extension.js + 真实 D-Bus）
@@ -54,7 +54,7 @@ make lint             # bash -n / py_compile / shellcheck（可选）/ checklist
 make typecheck        # 类型注解：mypy 查 tools/，tsc --checkJs 查 extension.js 与契约测试（缺工具时跳过，CI 严格）
 make check            # 离线跑 tools/generate.py --no-probe，校验键名与配置组装
 make generate         # 依据本机 dconf 重新生成配置与 docs/03-行为清单.md
-make fetch-engine     # 下载与指令集架构/桌面匹配的 xremap 最新发布版本（联网）
+make fetch-engine     # 下载 gnome 特性的 xremap 最新发布版本（联网）
 make test             # 离线单元测试：focusd + 生成器 + 引擎下载 + 卸载清理 + 安装幂等（CI 可跑）
 make test-contract    # bash tests/verify-extension.sh（需 gjs + D-Bus 会话）
 make test-e2e         # bash tests/e2e-app-match.sh（需 input 组 + /dev/uinput）

@@ -112,6 +112,16 @@ session_env() {
     export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
 }
 
+# Mackey 仅支持 GNOME Wayland：GNOME 50 已移除 X11 会话，且 GNOME 扩展 API
+# 变动频繁，本项目不跟随更旧版本。所有会改配置/拉起服务的入口都先过这道闸。
+refuse_x11_session() {
+    [[ "${XDG_SESSION_TYPE:-}" == "x11" ]] || return 0
+    err "当前是 X11 会话：Mackey 仅支持 GNOME Wayland，命令已中止"
+    dim "  原因：GNOME 50 已移除 X11 会话，且 GNOME 扩展 API 变动频繁，本项目不跟随更旧版本的 GNOME。"
+    dim "  请在 Wayland 会话（GNOME 的默认登录方式）下重跑。"
+    return 1
+}
+
 find_engine() {
     local configured; configured="$(user_config engine '')"
     # MACKEY_ENGINE 是文档承诺的覆盖入口，优先级最高。
@@ -273,6 +283,7 @@ EOF
 cmd_install() {
     guard_no_root
     session_env
+    refuse_x11_session || return 1
     local fetch_engine=1 keep_running=0 arg
     for arg in "$@"; do
         case "$arg" in
@@ -481,6 +492,7 @@ PY
 
 cmd_enable() {
     session_env
+    refuse_x11_session || return 1
 
     # 安全闸门 1：先测焦点来源（不依赖服务）。
     # 焦点来源不可用时绝不能开引擎：xremap 会打印 supported: false，
@@ -589,8 +601,14 @@ cmd_doctor() {
 
     # 0) 会话
     local stype; stype="$(loginctl show-session "$(loginctl 2>/dev/null | awk -v u="$(id -un)" '$3==u && $6=="user" {print $1; exit}')" -p Type --value 2>/dev/null)"
-    [[ "$stype" == "wayland" ]] && ok "会话类型：Wayland（走 evdev 方案，正确）" \
-        || { dim "会话类型：${stype:-未知}（X11 下本方案同样可用）"; }
+    if [[ "$stype" == "wayland" ]]; then
+        ok "会话类型：Wayland（走 evdev 方案，正确）"
+    elif [[ "$stype" == "x11" ]]; then
+        err "会话类型：X11 —— 不受支持（GNOME 50 已移除 X11 会话，本项目仅支持 GNOME Wayland）"
+        problems=$((problems+1))
+    else
+        dim "会话类型：${stype:-未知}（Mackey 仅支持 GNOME Wayland）"
+    fi
 
     # 1) 读输入设备的权限（evdev 方案的唯一特权前提）
     if in_input_group; then        ok "input 组：当前会话已生效"
@@ -676,6 +694,7 @@ cmd_doctor() {
 cmd_apply() {
     guard_no_root
     session_env
+    refuse_x11_session || return 1
     # 显式传路径：与 CONF_DIR/BACKUP 保持一致（XDG_CONFIG_HOME 下不再分叉）
     local gen_args=(--no-docs --user-config "$CONF_DIR/config.json" --out-dir "$CONF_DIR" --backup "$BACKUP")
     python3 "$ROOT/tools/generate.py" "${gen_args[@]}" || die "生成失败"
@@ -798,7 +817,7 @@ ${C_DIM}Mackey${C_END} —— GNOME 上的 macOS 键位模拟（不写系统目�
 用法: mackey <命令>
 
   init        生成 ${XDG_CONFIG_HOME:-~/.config}/mackey/config.json（自动判定键盘配列）
-  fetch-engine 下载与指令集架构/桌面匹配的 xremap 最新发布版本（存到 XDG 数据目录）
+  fetch-engine 下载与指令集架构匹配的 xremap 最新发布版本（GNOME Wayland，固定 gnome 特性）
   install     安装扩展、systemd 用户服务与命令行入口（默认同时下载引擎；--no-fetch 跳过下载，--keep-running 不停旧服务）
   enable      启动服务并启用扩展
   disable     停用（键盘立刻回到 Linux 原生行为）

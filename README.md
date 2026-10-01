@@ -1,6 +1,6 @@
 # Mackey —— 在 GNOME 上沿用 macOS 的快捷键
 
-面向**同时使用 macOS 与 Linux** 的人：在 GNOME（Wayland 或 X11）上，把 macOS 的 ⌘/⌥ 组合
+面向**同时使用 macOS 与 Linux** 的人：在 GNOME（Wayland）上，把 macOS 的 ⌘/⌥ 组合
 翻译成「当前应用在 Linux 下的等价按键」。终端与普通应用各用一套映射——**快捷键顺手，
 GNOME 自身功能也尽量原样保留**。本项目以 **AGPL-3.0-or-later** 发布，许可全文与第三方
 引用登记见 [LICENSE](LICENSE) 与 [docs/04-第三方许可证.md](docs/04-第三方许可证.md)。
@@ -43,14 +43,16 @@ Mackey 按焦点应用分三套映射：
 
 ### 一键安装（推荐）
 
-`install.sh` 会自动下载与你的 **指令集架构 + 桌面环境**匹配的 xremap 最新发布版本，再安装 GNOME 扩展
-与 systemd 用户服务。全程只写 `$HOME`，不需要 sudo。
+`install.sh` 会自动下载与你的 **指令集架构**匹配的 xremap 最新发布版本
+（Mackey 仅支持 GNOME Wayland，固定取 xremap 的 `gnome` 特性），再安装 GNOME 扩展
+与 systemd 用户服务。全程只写 `$HOME`，不需要 sudo。脚本会先校验会话：
+非 GNOME 桌面或 X11 会话都会警告并中止（GNOME 50 已移除 X11 会话，本项目不跟随更旧版本 GNOME）。
 
 ```bash
 ./install.sh          # 可选：--no-fetch 跳过下载、--keep-running 保留旧服务、--yes 免确认
 ```
 
-脚本**可重复执行且幂等**：机器上已有旧引擎 / 旧配置 / 旧服务时，会按当前指令集架构 + 桌面环境重新
+脚本**可重复执行且幂等**：机器上已有旧引擎 / 旧配置 / 旧服务时，会按当前指令集架构 + 会话类型重新
 对齐引擎、重写服务与扩展、清理陈旧 socket 与自启软链，结果与「全新安装」一致
 （`--keep-running` 可保留正在运行的服务；`config.json` 里已有的字段值会保留，缺失字段自动补齐）。
 
@@ -103,7 +105,7 @@ sudo usermod -aG input "$USER"
 | `mackey status` | 当前状态（会话 / 引擎 / 焦点桥 / 扩展 / 服务） |
 | `mackey doctor` | 体检：权限、引擎、扩展、焦点来源、冲突、历史遗留的一键排查 |
 | `mackey version` | 显示版本与引擎路径（等价于 `mackey --version`） |
-| `mackey fetch-engine` | 下载与指令集架构/桌面匹配的 xremap 最新发布版本（`--tag` 指定版本，`--print-plan` 只看计划） |
+| `mackey fetch-engine` | 下载与指令集架构匹配的 xremap 最新发布版本（固定 `gnome` 特性；`--tag` 指定版本，`--print-plan` 只看计划） |
 | `mackey probe` | 只读地打印 GNOME 已占用键位与需要迁移的项 |
 | `mackey generate` | 重新生成 xremap 配置 / 迁移计划 / 行为清单 |
 | `mackey apply` | 生成 + 迁移键位（带备份）+ 重启服务 |
@@ -138,7 +140,7 @@ VERSION                            版本号（mackey version 读取它）
 bin/mackey                         主命令（bash），所有子命令的唯一入口
 config/checklist.json              行为清单 = 唯一事实源（改行为只改这里）
 tools/generate.py                  清单 + dconf 探测 → xremap 配置 / 迁移计划 / 行为清单文档
-tools/fetch-engine.py              按指令集架构 + 桌面环境下载 xremap 最新发布版本（XDG 落点）
+tools/fetch-engine.py              按指令集架构下载 gnome 特性的 xremap 最新发布版本（XDG 落点）
 tools/focusd.py                    焦点上报桥（把任意焦点来源翻译成 xremap 的 socket 协议）
 tools/detect-keyboard.py           识别主键盘并建议 modifier_layout
 extension/xremap-compat@…/         最小 GNOME 扩展：只报焦点窗口，不抓键、不注入
@@ -146,9 +148,9 @@ extension/xremap-compat@…/         最小 GNOME 扩展：只报焦点窗口，
 tests/fake_keyboard.py             uinput 虚拟键盘（自测用，不碰真实键盘）
 tests/test_focusd.py               focusd 离线单元测试（不连 D-Bus）
 tests/test_generate.py             生成器离线单元测试（basis 分类 / 文档渲染 / 完整生成）
-tests/test_fetch_engine.py         引擎下载器离线单元测试（指令集架构/桌面映射、zip 校验、原子安装）
+tests/test_fetch_engine.py         引擎下载器离线单元测试（指令集架构/会话映射、zip 校验、原子安装）
 tests/test-uninstall-cleanup.sh    隔离带验证卸载清理（沙箱 HOME + 桩 systemctl/gsettings）
-tests/test-install-idempotency.sh  隔离带验证安装幂等（干净安装 vs 旧状态重装，逐字节比较）
+tests/test-install-idempotency.sh  隔离带验证安装幂等（非 GNOME 拒绝 + 干净安装 vs 旧状态重装）
 tests/e2e-app-match.sh             端到端「焦点桥 → xremap 按应用分流」验证
 tests/e2e-swallow-exempt.sh        端到端验证替换模式的应用例外（终端/IDE 保留 ⌃C）
 tests/verify-extension.sh          隔离带验证扩展契约（真实 extension.js + 真实 D-Bus）
@@ -163,8 +165,8 @@ docs/04-第三方许可证.md             引用项目的许可证登记与兼�
 
 | 项 | 说明 |
 | --- | --- |
-| 桌面 | GNOME（Wayland / X11 均可）；其它桌面需更换焦点来源后端 |
-| 引擎 | xremap ≥ 0.15；`install.sh` / `mackey fetch-engine` 会按指令集架构（x86_64/aarch64）与桌面环境自动下载对应发布版本（gnome/kde/hypr/wlroots/niri/cosmic/pantheon/x11） |
+| 桌面 | GNOME（Wayland）；不支持 X11 会话与更旧版本 GNOME（GNOME 50 已移除 X11，扩展 API 变动频繁） |
+| 引擎 | xremap ≥ 0.15；`install.sh` / `mackey fetch-engine` 会按指令集架构（x86_64/aarch64）自动下载 `gnome` 特性的发布版本 |
 | Python | 3.10+；有 PyGObject 时进程内调用 D-Bus，没有则回退 `busctl`（CI 使用 3.14） |
 | 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |
 

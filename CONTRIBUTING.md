@@ -29,7 +29,7 @@
 获取引擎（任一即可）：
 
 ```bash
-./bin/mackey fetch-engine       # 按指令集架构 + 桌面环境下载最新发布版本，装到 XDG 数据目录
+./bin/mackey fetch-engine       # 按指令集架构下载 xremap 最新发布版本（固定 gnome 特性），装到 XDG 数据目录
 cargo install xremap --features gnome
 # 或把发布页下载的二进制放到仓库的 .vendor/xremap（该目录已被 .gitignore 忽略）
 ```
@@ -41,7 +41,7 @@ make lint             # bash -n / py_compile / shellcheck / checklist.json 校�
 make typecheck        # 类型注解：mypy 查 tools/，tsc --checkJs 查 extension.js 与契约测试
 make check            # 离线跑生成器，校验键名与配置组装
 make generate         # 依据本机 dconf 重新生成配置与行为清单
-make fetch-engine     # 下载指令集架构/桌面匹配的 xremap 最新发布版本（联网）
+make fetch-engine     # 下载 gnome 特性的 xremap 最新发布版本（联网）
 make test             # 离线单元测试：focusd + 生成器 + 引擎下载 + 卸载清理 + 安装幂等
 make test-contract    # 扩展契约测试（gjs + 真实 D-Bus 往返）
 make test-e2e         # 端到端「焦点桥 → 按应用分流」（需 input 组与 /dev/uinput）

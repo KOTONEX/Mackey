@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Mackey contributors
 # 幂等性验证：在同一个沙箱 HOME 里
+#   0) 非 GNOME 桌面或 X11 会话时安装入口必须警告并中止（且不产生任何写入）；
 #   1) 先做一次「干净安装」（init + install --no-fetch）并快照全部产物；
 #   2) 人为制造旧状态：改坏的 unit、陈旧 socket、自启软链、扩展目录脏文件、
 #      缺字段的旧版 config.json、以及一个已存在的旧引擎；
@@ -71,8 +72,45 @@ ENGINE_UNIT="$UNIT_DIR/mackey-engine.service"
 EXT_DIR="$HB/.local/share/gnome-shell/extensions/$UUID"
 ENGINE_BIN="$HB/.local/share/mackey/bin/xremap"
 
+# ---- 场景 0：非 GNOME 桌面 / X11 会话都必须拒绝安装 ----
+echo "==> 1/5 非 GNOME 桌面与 X11 会话：安装入口警告并中止"
+XDG_CURRENT_DESKTOP=KDE HOME="$HB" PATH="$STUBS:$PATH" \
+    XDG_CONFIG_HOME="$HB/.config" XDG_DATA_HOME="$HB/.local/share" \
+    XDG_CACHE_HOME="$HB/.cache" XDG_STATE_HOME="$HB/.local/state" \
+    XDG_BIN_HOME="$HB/.local/bin" XDG_RUNTIME_DIR="$HB/run" \
+    bash "$ROOT/install.sh" > "$SANDBOX/guard.out" 2>&1
+guard_rc=$?
+if [[ $guard_rc -ne 0 ]] && grep -q '仅支持 GNOME' "$SANDBOX/guard.out"; then
+    ok "非 GNOME 会话被拒绝（rc=$guard_rc）"
+else
+    fail "非 GNOME 会话未被拒绝（rc=$guard_rc）"; sed -n '1,10p' "$SANDBOX/guard.out"
+fi
+XDG_CURRENT_DESKTOP=GNOME XDG_SESSION_TYPE=x11 HOME="$HB" PATH="$STUBS:$PATH" \
+    XDG_CONFIG_HOME="$HB/.config" XDG_DATA_HOME="$HB/.local/share" \
+    XDG_CACHE_HOME="$HB/.cache" XDG_STATE_HOME="$HB/.local/state" \
+    XDG_BIN_HOME="$HB/.local/bin" XDG_RUNTIME_DIR="$HB/run" \
+    bash "$ROOT/install.sh" > "$SANDBOX/guard-x11.out" 2>&1
+x11_rc=$?
+if [[ $x11_rc -ne 0 ]] && grep -q 'X11' "$SANDBOX/guard-x11.out"; then
+    ok "X11 会话被拒绝（rc=$x11_rc）"
+else
+    fail "X11 会话未被拒绝（rc=$x11_rc）"; sed -n '1,10p' "$SANDBOX/guard-x11.out"
+fi
+XDG_SESSION_TYPE=x11 run_mac_keys install --no-fetch > "$SANDBOX/guard-manual.out" 2>&1
+manual_rc=$?
+if [[ $manual_rc -ne 0 ]] && grep -q 'X11' "$SANDBOX/guard-manual.out"; then
+    ok "手动入口（bin/mackey install）同样拒绝 X11（rc=$manual_rc）"
+else
+    fail "手动入口未拒绝 X11（rc=$manual_rc）"; sed -n '1,10p' "$SANDBOX/guard-manual.out"
+fi
+if [[ ! -e "$HB/.config/mackey" && ! -e "$HB/.local/share/mackey" ]]; then
+    ok "所有拒绝路径都没有产生写入"
+else
+    fail "拒绝后仍产生了写入"
+fi
+
 # ---- 场景 A：干净安装（预置一个「旧引擎」，模拟升级前已存在 xremap） ----
-echo "==> 1/4 干净安装并快照"
+echo "==> 2/5 干净安装并快照"
 mkdir -p "$(dirname "$ENGINE_BIN")" "$HB/run"
 printf 'OLD-ENGINE' > "$ENGINE_BIN"
 chmod +x "$ENGINE_BIN"
@@ -89,7 +127,7 @@ else
 fi
 
 # ---- 制造旧状态 ----
-echo "==> 2/4 制造旧状态（脏 unit / 陈积 socket / 自启软链 / 脏扩展 / 旧版 config）"
+echo "==> 3/5 制造旧状态（脏 unit / 陈积 socket / 自启软链 / 脏扩展 / 旧版 config）"
 printf 'STALE\n' >> "$ENGINE_UNIT"
 printf 'STALE\n' >> "$UNIT_DIR/mackey-focusd.service"
 mkdir -p "$UNIT_DIR/default.target.wants"
@@ -111,7 +149,7 @@ json.dump(data, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 PY
 
 # ---- 场景 B：重跑安装流程 ----
-echo "==> 3/4 重跑安装并比较"
+echo "==> 4/5 重跑安装并比较"
 run_mac_keys init >/dev/null 2>&1
 run_mac_keys install --no-fetch >/dev/null 2>&1
 snapshot > "$SANDBOX/snap-repeat.txt"
@@ -132,7 +170,7 @@ fi
 grep -q 'STALE' "$ENGINE_UNIT" && fail "unit 仍含旧内容" || ok "unit 已按干净安装重写"
 
 # ---- 场景 C：旧配置损坏时也应收敛到干净安装的结果 ----
-echo "==> 4/4 损坏的旧配置：备份后重建，且内容与干净安装一致"
+echo "==> 5/5 损坏的旧配置：备份后重建，且内容与干净安装一致"
 printf '{ not json' > "$HB/.config/mackey/config.json"
 run_mac_keys init >/dev/null 2>&1
 compgen -G "$HB/.config/mackey/config.json.bak-*" >/dev/null && ok "损坏配置已备份" || fail "未备份损坏配置"

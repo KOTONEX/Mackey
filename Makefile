@@ -14,7 +14,7 @@ help:
 	  '  make typecheck       类型注解检查：mypy（Python tools）+ tsc（extension.js / 契约测试）' \
 	  '  make check           离线跑生成器，校验键名与配置组装' \
 	  '  make generate        依据本机 dconf 重新生成配置与 docs/03-行为清单.md' \
-	  '  make fetch-engine    下载与指令集架构/桌面匹配的 xremap 最新发布版本（存到 XDG 数据目录）' \
+	  '  make fetch-engine    下载与指令集架构/会话匹配的 xremap 最新发布版本（存到 XDG 数据目录）' \
 	  '  make test-contract   扩展契约测试（需 gjs + D-Bus 会话）' \
 	  '  make test-e2e        端到端「焦点桥 → 按应用分流」（需 input 组 + /dev/uinput）' \
 	  '  make test            离线单元测试：focusd + 生成器 + 引擎下载（不连 D-Bus，CI 可跑）' \

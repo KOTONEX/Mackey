@@ -4,7 +4,7 @@
 """fetch-engine.py 的离线单元测试：不联网、不写真实 XDG 目录。
 
 覆盖：
-  * 指令集架构/桌面环境 → 资产名与下载 URL 的映射（含 X11、未知桌面回退 full）；
+  * 指令集架构 → 资产名与下载 URL 的映射（GNOME Wayland：固定 gnome 特性）；
   * 候选回退（精确特性 → full）；
   * `--print-plan` 在上游标签明确时不碰网络，且落点参数被尊重；
   * 从 zip 取二进制：成员校验、ELF 校验（含架构匹配）、原子安装、权限、sha256、state 记录；
@@ -52,29 +52,16 @@ check("aarch64/arm64 归一化",
       fetch.arch_for("aarch64") == "aarch64" and fetch.arch_for("arm64") == "aarch64")
 check("未知指令集架构返回 None", fetch.arch_for("riscv64") is None)
 
-# 2) 桌面环境 → 特性
-cases = [
-    ("GNOME", "wayland", "gnome"),
-    ("ubuntu:GNOME", "wayland", "gnome"),
-    ("KDE", "wayland", "kde"),
-    ("Hyprland", "wayland", "hypr"),
-    ("niri", "wayland", "niri"),
-    ("COSMIC", "wayland", "cosmic"),
-    ("Pantheon", "wayland", "pantheon"),
-    ("sway", "wayland", "wlroots"),
-    ("river", "wayland", "wlroots"),
-    ("GNOME", "x11", "x11"),
-    ("", "wayland", "full"),
-]
-for desktop, session, expected in cases:
-    feature, _ = fetch.detect_feature(desktop, session)
-    check(f"{desktop or '(未知)'}/{session} → {expected}", feature == expected, f"→ {feature}")
+# 2) 特性固定为 gnome（Mackey 仅支持 GNOME Wayland，不识别桌面/会话）
+check("默认特性固定为 gnome", fetch.DEFAULT_FEATURE == "gnome")
+check("默认理由说明仅支持 GNOME",
+      "GNOME" in fetch.DEFAULT_FEATURE_REASON and "gnome" in fetch.DEFAULT_FEATURE_REASON)
 
 # 3) 资产名与 URL
 check("资产名", fetch.asset_name("x86_64", "gnome") == "xremap-linux-x86_64-gnome.zip")
 check("下载 URL",
-      fetch.asset_url("v0.15.13", "aarch64", "kde")
-      == "https://github.com/xremap/xremap/releases/download/v0.15.13/xremap-linux-aarch64-kde.zip")
+      fetch.asset_url("v0.15.13", "aarch64", "gnome")
+      == "https://github.com/xremap/xremap/releases/download/v0.15.13/xremap-linux-aarch64-gnome.zip")
 check("候选回退到 full", fetch.candidates("gnome") == ["gnome", "full"])
 check("full 不重复", fetch.candidates("full") == ["full"])
 
@@ -92,7 +79,7 @@ with tempfile.TemporaryDirectory() as tmp:
     dest, state = tmpdir / "bin/xremap", tmpdir / "state.json"
     proc = subprocess.run(
         [sys.executable, str(ROOT / "tools" / "fetch-engine.py"), "--print-plan",
-         "--tag", "v0.15.13", "--arch", "x86_64", "--desktop", "GNOME", "--session", "wayland",
+         "--tag", "v0.15.13", "--arch", "x86_64",
          "--dest", str(dest), "--cache", str(tmpdir / "cache"), "--state", str(state)],
         capture_output=True, text=True,
     )
@@ -101,6 +88,8 @@ with tempfile.TemporaryDirectory() as tmp:
         check("--print-plan 输出合法 JSON", proc.returncode == 0, f"→ rc={proc.returncode} {proc.stderr[-200:]}")
         check("--print-plan 选出 gnome 资产",
               plan["candidates"][0].endswith("xremap-linux-x86_64-gnome.zip"), f"→ {plan['candidates'][0]}")
+        check("--print-plan 不含桌面/会话字段",
+              "desktop" not in plan and "session" not in plan and plan["feature"] == "gnome")
         check("--print-plan 不落盘", not dest.exists() and not state.exists())
     except json.JSONDecodeError as exc:
         check("--print-plan 输出合法 JSON", False, f"→ {exc}: {proc.stdout!r}")

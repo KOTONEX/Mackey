@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Mackey contributors
-"""下载与当前指令集架构/桌面环境匹配的 xremap 最新发布版本，并安装到 XDG 目录。
+"""下载与当前指令集架构匹配的 xremap 最新发布版本，并安装到 XDG 目录。
+
+Mackey 仅支持 GNOME Wayland：固定取 `gnome` 特性，不识别桌面环境，也不支持
+X11 会话——GNOME 50 已移除 X11，且 GNOME 扩展 API 变动频繁，本项目不跟随更旧版本。
 
 为什么不走 GitHub API
 ---------------------
 `api.github.com` 在受限网络里经常返回 403；而
 `https://github.com/xremap/xremap/releases/latest` 的 302 跳转稳定可用，
 资产命名也是稳定的 `xremap-linux-<arch>-<feature>.zip`（见上游 .github/workflows/build.yml
-的 build 矩阵：arch ∈ x86_64/aarch64，feature ∈ x11/gnome/kde/hypr/wlroots/niri/cosmic/
-pantheon/socket/full）。于是可以直接拼 URL，无需枚举资产。
+的 build 矩阵：arch ∈ x86_64/aarch64）。于是可以直接拼 URL，无需枚举资产。
 
 XDG 落点
 --------
@@ -63,18 +65,6 @@ ARCH_MAP = {
 # ELF e_machine → 指令集架构：x86_64 = 62 (0x3E)，aarch64 = 183 (0xB7)。
 ARCH_ELF_MACHINE = {"x86_64": 0x3E, "aarch64": 0xB7}
 
-# 桌面环境 → xremap 编译特性。顺序敏感：GNOME/KDE 等要在通用匹配之前。
-DESKTOP_FEATURES = [
-    (r"gnome", "gnome"),
-    (r"kde|plasma", "kde"),
-    (r"hyprland", "hypr"),
-    (r"niri", "niri"),
-    (r"cosmic", "cosmic"),
-    (r"pantheon", "pantheon"),
-    (r"sway|wayfire|river|labwc|wlroots|phosh|gamescope", "wlroots"),
-    (r"xfce|cinnamon|mate|lxde|lxqt|i3|bspwm|openbox|awesome|xmonad|budgie|unity|deepin|dde", "x11"),
-]
-
 
 class EngineState(TypedDict, total=False):
     """$XDG_STATE_HOME/mackey/engine.json 的记录：安装结果只由它 + 环境决定。"""
@@ -86,8 +76,6 @@ class EngineState(TypedDict, total=False):
     size: int
     arch: str
     feature: str
-    desktop: str
-    session: str
     installed_at: str
     dest: str
 
@@ -103,8 +91,6 @@ class InstallPlan(TypedDict):
     dest: str
     cache: str
     state: str
-    desktop: str
-    session: str
 
 
 def xdg_dirs() -> dict[str, Path]:
@@ -120,22 +106,9 @@ def arch_for(machine: str) -> str | None:
     return ARCH_MAP.get((machine or "").strip().lower())
 
 
-def detect_feature(desktop: str, session: str) -> tuple[str, str]:
-    """按桌面环境（必要时按会话类型）选择 xremap 特性，并说明理由。"""
-    desktop = (desktop or "").strip().lower()
-    session = (session or "").strip().lower()
-    if session == "x11":
-        return "x11", "X11 会话：使用 xremap 的 x11 客户端"
-    for pattern, feature in DESKTOP_FEATURES:
-        if re.search(pattern, desktop):
-            return feature, f"桌面 {desktop}：使用 {feature} 特性"
-    return "full", "未识别的桌面/会话：回退到 full（包含全部特性的超集）"
-
-
-def desktop_and_session() -> tuple[str, str]:
-    desktop = os.environ.get("XDG_CURRENT_DESKTOP") or os.environ.get("DESKTOP_SESSION") or ""
-    session = os.environ.get("XDG_SESSION_TYPE", "")
-    return desktop, session
+# Mackey 仅支持 GNOME Wayland（GNOME 50 起已无 X11 会话），构建特性固定为 gnome。
+DEFAULT_FEATURE = "gnome"
+DEFAULT_FEATURE_REASON = "Mackey 仅支持 GNOME Wayland：固定使用 gnome 特性"
 
 
 def candidates(feature: str) -> list[str]:
@@ -311,7 +284,7 @@ def needs_install(dest: Path, state_path: Path, tag: str, arch: str, feature: st
                   force: bool = False) -> bool:
     """是否需要（重新）安装：必须同时匹配标签 / 指令集架构 / 特性 / 内容哈希。
 
-    只看标签是不够的：同一版本可能装着给别的桌面编的 `full`/`kde` 构建，
+    只看标签是不够的：同一版本可能装着别的特性（如包含全部特性的 `full`）编的构建，
     或者目标文件被替换过；这些情况都要重新下载，才能保证「安装结果只由当前
     环境决定」，与干净安装一致。
     """
@@ -328,15 +301,13 @@ def needs_install(dest: Path, state_path: Path, tag: str, arch: str, feature: st
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     dirs = xdg_dirs()
-    ap = argparse.ArgumentParser(description="下载指令集架构/桌面匹配的 xremap 最新发布版本")
+    ap = argparse.ArgumentParser(description="下载与指令集架构匹配的 xremap 最新发布版本（GNOME Wayland）")
     ap.add_argument("--dest", default=str(dirs["data"] / "bin/xremap"))
     ap.add_argument("--cache", default=str(dirs["cache"]))
     ap.add_argument("--state", default=str(dirs["state"] / "engine.json"))
     ap.add_argument("--tag", default="", help="指定发布标签（默认解析 latest，--print-plan 时建议给出以避免联网）")
     ap.add_argument("--arch", default="", help="覆盖指令集架构（x86_64/aarch64）")
-    ap.add_argument("--feature", default="", help="覆盖 xremap 特性（gnome/kde/…）")
-    ap.add_argument("--desktop", default="", help="覆盖桌面环境探测值，如 GNOME/KDE/sway")
-    ap.add_argument("--session", default="", help="覆盖会话类型探测值（wayland/x11）")
+    ap.add_argument("--feature", default="", help="覆盖 xremap 特性（默认 gnome，可指定 full 等）")
     ap.add_argument("--force", action="store_true", help="即使已装同版本也重新下载")
     ap.add_argument("--print-plan", action="store_true", help="只打印计划（JSON），不下载")
     ap.add_argument("--timeout", type=float, default=60.0)
@@ -353,12 +324,7 @@ def main(argv: list[str] | None = None) -> int:
               f"其它架构请用 cargo install xremap --features gnome 自行编译。", file=sys.stderr)
         return 2
 
-    desktop, session = desktop_and_session()
-    if args.desktop:
-        desktop = args.desktop
-    if args.session:
-        session = args.session
-    feature, reason = detect_feature(desktop, session)
+    feature, reason = DEFAULT_FEATURE, DEFAULT_FEATURE_REASON
     if args.feature:
         feature, reason = args.feature, "由 --feature 指定"
 
@@ -383,8 +349,6 @@ def main(argv: list[str] | None = None) -> int:
         "dest": str(dest),
         "cache": str(cache),
         "state": str(state),
-        "desktop": desktop,
-        "session": session,
     }
 
     if args.print_plan:
@@ -409,8 +373,8 @@ def main(argv: list[str] | None = None) -> int:
             continue
         write_state(state, {
             "tag": tag, "asset": Path(url).name, "url": url, "sha256": digest,
-            "size": size, "arch": arch, "feature": feature, "desktop": desktop,
-            "session": session, "installed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "size": size, "arch": arch, "feature": feature,
+            "installed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "dest": str(dest),
         })
         prune_cache(asset.parent, asset)

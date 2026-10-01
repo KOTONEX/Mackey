@@ -9,6 +9,14 @@
 
 （暂无）
 
+## [1.2.0] - 2026-10-01
+
+- 明确只支持 GNOME Wayland：`fetch-engine` 固定下载 `gnome` 特性，不再识别桌面/会话
+  （`--desktop`、`--session` 参数移除）。
+- `install.sh` 对非 GNOME 桌面或 X11 会话警告并中止（exit 1），`mackey install/enable/apply`
+  同样拒绝 X11 会话：GNOME 50 已移除 X11 会话，且 GNOME 扩展 API 变动频繁，
+  本项目不跟随更旧版本 GNOME。
+
 ## [1.1.0] - 2026-10-01
 
 - 终端里复制/粘贴只认 `⌘C`/`⌘V`：新增 `swallow_terminal`，吞掉物理 `Ctrl+Shift+C/V`；

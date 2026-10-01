@@ -25,7 +25,7 @@ labels: ["bug"]
 ## 环境
 
 - 发行版：
-- 桌面/会话：GNOME ______ / Wayland 或 X11
+- 会话：GNOME ______（Wayland；本项目不支持 X11 会话）
 - 键盘与 `modifier_layout`：
 - xremap 版本（`xremap --version`）：
 - 是否已重新登录：是 / 否
