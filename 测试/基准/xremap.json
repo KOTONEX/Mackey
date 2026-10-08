@@ -1,0 +1,231 @@
+{
+  "keymap": [
+    {
+      "name": "terminal：终端里 Ctrl+C/Z/D 是信号与 EOF，必须单独一套",
+      "application": {
+        "only": [
+          "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/"
+        ]
+      },
+      "remap": {
+        "SUPER-C": "C-S-C",
+        "SUPER-V": "C-S-V",
+        "S-SUPER-V": "C-S-V",
+        "SUPER-X": "C-S-X",
+        "SUPER-A": "C-S-A",
+        "SUPER-Z": "F24",
+        "S-SUPER-Z": "F24",
+        "SUPER-S": "C-S-S",
+        "S-SUPER-S": "C-S-S",
+        "SUPER-O": "F24",
+        "SUPER-P": "C-S-P",
+        "SUPER-F": "C-S-F",
+        "SUPER-G": "F24",
+        "S-SUPER-G": "F24",
+        "SUPER-BACKSLASH": "F24",
+        "SUPER-N": "C-S-N",
+        "S-SUPER-N": "C-S-N",
+        "SUPER-T": "C-S-T",
+        "SUPER-W": "C-S-W",
+        "C-SUPER-F": "F11",
+        "SUPER-LEFT": "HOME",
+        "SUPER-RIGHT": "END",
+        "SUPER-UP": "S-PAGEUP",
+        "SUPER-DOWN": "S-PAGEDOWN",
+        "SUPER-BACKSPACE": "C-U",
+        "A-LEFT": "C-LEFT",
+        "A-RIGHT": "C-RIGHT",
+        "A-UP": "S-PAGEUP",
+        "A-DOWN": "S-PAGEDOWN",
+        "A-BACKSPACE": "C-BACKSPACE",
+        "A-DELETE": "C-DELETE",
+        "SUPER-1": "A-1",
+        "SUPER-2": "A-2",
+        "SUPER-3": "A-3",
+        "SUPER-4": "A-4",
+        "SUPER-5": "A-5",
+        "SUPER-6": "A-6",
+        "SUPER-7": "A-7",
+        "SUPER-8": "A-8",
+        "SUPER-9": "A-9",
+        "SUPER-L": "C-L",
+        "SUPER-K": "C-L",
+        "SUPER-D": "F24",
+        "SUPER-R": "F24",
+        "S-SUPER-R": "F24",
+        "S-SUPER-EQUAL": "C-S-EQUAL",
+        "SUPER-MINUS": "C-MINUS",
+        "SUPER-0": "C-0",
+        "SUPER-I": "F24"
+      }
+    },
+    {
+      "name": "swallow-terminal：终端里吞掉 Ctrl+Shift+C/V（复制/粘贴只认 ⌘C/⌘V）",
+      "application": {
+        "only": [
+          "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/"
+        ]
+      },
+      "remap": {
+        "C-S-C": "F24",
+        "C-S-V": "F24"
+      }
+    },
+    {
+      "name": "files：文件管理器语义不同（⌘⌫=废纸篓、⌘I=属性）",
+      "application": {
+        "only": [
+          "/^(org\\.gnome\\.Nautilus|nautilus|Nautilus|org\\.gnome\\.Files|dolphin|Dolphin|thunar|Thunar|nemo|Nemo|org\\.nemo\\.Nemo|pcmanfm|pcmanfm-qt|krusader|caja|Caja|Files)$/"
+        ]
+      },
+      "remap": {
+        "SUPER-C": "C-C",
+        "SUPER-V": "C-V",
+        "SUPER-X": "C-X",
+        "SUPER-A": "C-A",
+        "SUPER-Z": "C-Z",
+        "S-SUPER-Z": "C-S-Z",
+        "SUPER-F": "C-F",
+        "SUPER-N": "C-N",
+        "S-SUPER-N": "C-S-N",
+        "SUPER-T": "C-T",
+        "SUPER-W": "C-W",
+        "SUPER-BACKSPACE": "DELETE",
+        "SUPER-I": "A-ENTER",
+        "S-SUPER-DOT": "C-H"
+      }
+    },
+    {
+      "name": "generic：其余应用的兜底（只含显式条目）",
+      "remap": {
+        "SUPER-C": "C-C",
+        "SUPER-V": "C-V",
+        "S-SUPER-V": "C-S-V",
+        "SUPER-X": "C-X",
+        "SUPER-A": "C-A",
+        "SUPER-Z": "C-Z",
+        "S-SUPER-Z": "C-S-Z",
+        "SUPER-S": "C-S",
+        "S-SUPER-S": "C-S-S",
+        "SUPER-O": "C-O",
+        "SUPER-P": "C-P",
+        "SUPER-F": "C-F",
+        "SUPER-G": "C-G",
+        "S-SUPER-G": "C-S-G",
+        "SUPER-SLASH": "C-SLASH",
+        "SUPER-BACKSLASH": "C-BACKSLASH",
+        "S-SUPER-P": "C-S-P",
+        "S-SUPER-A": "C-S-A",
+        "A-SUPER-I": "C-S-I",
+        "A-SUPER-J": "C-S-J",
+        "SUPER-N": "C-N",
+        "S-SUPER-N": "C-S-N",
+        "SUPER-T": "C-T",
+        "S-SUPER-T": "C-S-T",
+        "SUPER-W": "C-W",
+        "S-SUPER-W": "C-S-W",
+        "SUPER-M": "SUPER-H",
+        "C-SUPER-F": "F11",
+        "SUPER-LEFT": "HOME",
+        "SUPER-RIGHT": "END",
+        "S-SUPER-LEFT": "S-HOME",
+        "S-SUPER-RIGHT": "S-END",
+        "SUPER-UP": "C-HOME",
+        "SUPER-DOWN": "C-END",
+        "S-SUPER-UP": "C-S-HOME",
+        "S-SUPER-DOWN": "C-S-END",
+        "SUPER-BACKSPACE": [
+          "S-HOME",
+          "DELETE"
+        ],
+        "A-LEFT": "C-LEFT",
+        "A-RIGHT": "C-RIGHT",
+        "S-A-LEFT": "C-S-LEFT",
+        "S-A-RIGHT": "C-S-RIGHT",
+        "A-UP": "C-UP",
+        "A-DOWN": "C-DOWN",
+        "A-BACKSPACE": "C-BACKSPACE",
+        "A-DELETE": "C-DELETE",
+        "SUPER-1": "C-1",
+        "SUPER-2": "C-2",
+        "SUPER-3": "C-3",
+        "SUPER-4": "C-4",
+        "SUPER-5": "C-5",
+        "SUPER-6": "C-6",
+        "SUPER-7": "C-7",
+        "SUPER-8": "C-8",
+        "SUPER-9": "C-9",
+        "S-SUPER-LEFTBRACE": "C-PAGEUP",
+        "S-SUPER-RIGHTBRACE": "C-PAGEDOWN",
+        "SUPER-LEFTBRACE": "A-LEFT",
+        "SUPER-RIGHTBRACE": "A-RIGHT",
+        "SUPER-L": "C-L",
+        "SUPER-K": "C-K",
+        "SUPER-D": "C-D",
+        "SUPER-R": "C-R",
+        "S-SUPER-R": "C-S-R",
+        "SUPER-COMMA": "C-COMMA",
+        "S-SUPER-EQUAL": "C-S-EQUAL",
+        "SUPER-MINUS": "C-MINUS",
+        "SUPER-0": "C-0",
+        "SUPER-SPACE": "SUPER_L",
+        "S-SUPER-3": "PRINT",
+        "S-SUPER-4": "S-PRINT",
+        "S-SUPER-5": "A-PRINT",
+        "SUPER-I": "C-I"
+      }
+    },
+    {
+      "name": "generic-sweep：泛化兜底（终端不参与）",
+      "application": {
+        "not": [
+          "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/"
+        ]
+      },
+      "remap": {
+        "SUPER-B": "C-B",
+        "S-SUPER-B": "C-S-B",
+        "S-SUPER-C": "C-S-C",
+        "S-SUPER-D": "C-S-D",
+        "SUPER-E": "C-E",
+        "S-SUPER-E": "C-S-E",
+        "S-SUPER-F": "C-S-F",
+        "S-SUPER-H": "C-S-H",
+        "S-SUPER-I": "C-S-I",
+        "SUPER-J": "C-J",
+        "S-SUPER-J": "C-S-J",
+        "S-SUPER-K": "C-S-K",
+        "S-SUPER-L": "C-S-L",
+        "S-SUPER-M": "C-S-M",
+        "S-SUPER-O": "C-S-O",
+        "S-SUPER-Q": "C-S-Q",
+        "S-SUPER-U": "C-S-U",
+        "S-SUPER-X": "C-S-X",
+        "SUPER-Y": "C-Y",
+        "S-SUPER-Y": "C-S-Y",
+        "S-SUPER-1": "C-S-1",
+        "S-SUPER-2": "C-S-2",
+        "S-SUPER-6": "C-S-6",
+        "S-SUPER-7": "C-S-7",
+        "S-SUPER-8": "C-S-8",
+        "S-SUPER-9": "C-S-9"
+      }
+    },
+    {
+      "name": "swallow：替换模式（终端与内嵌终端应用除外）",
+      "application": {
+        "not": [
+          "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/",
+          "/^(code|code-insiders|codium|com\\.visualstudio\\.code|jetbrains-.+|com\\.jetbrains\\..+|gnome-builder|org\\.gnome\\.Builder|emacs|sublime_text|zed|dev\\.zed\\.Zed)$/"
+        ]
+      },
+      "remap": {
+        "C-C": "F24",
+        "C-X": "F24",
+        "C-V": "F24",
+        "C-Z": "F24",
+        "C-A": "F24"
+      }
+    }
+  ]
+}

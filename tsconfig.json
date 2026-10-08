@@ -3,7 +3,7 @@
     // SPDX-FileCopyrightText: 2026 Mackey contributors
     //
     // JS 侧类型检查：不产出任何文件（noEmit），只对 extension.js 与契约测试
-    // 做 @ts-check 级校验。GNOME 运行时由 types/gjs.d.ts 提供最小类型面。
+    // 做 @ts-check 级校验。GNOME 运行时由 类型声明/GJS环境.d.ts 提供最小类型面。
     "compilerOptions": {
         "allowJs": true,
         "checkJs": true,
@@ -13,16 +13,16 @@
         "moduleResolution": "bundler",
         "lib": ["ES2022"],
         "types": [],
-        "strict": false,
+        "strict": true,
         "noImplicitAny": true,
         "noImplicitThis": true,
         "noFallthroughCasesInSwitch": true,
         "forceConsistentCasingInFileNames": true,
-        "skipLibCheck": true
+        "skipLibCheck": false
     },
     "include": [
-        "extension/mackey-focus@kotonex/extension.js",
-        "tests/verify-extension.mjs",
-        "types/**/*.d.ts"
+        "扩展/mackey-focus@kotonex/extension.js",
+        "测试/扩展契约.mjs",
+        "类型声明/**/*.d.ts"
     ]
 }
