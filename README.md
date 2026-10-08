@@ -50,7 +50,7 @@ Mackey 按焦点应用分三套映射：
 
 从 Python 版更新时，请先运行该版本的卸载脚本，再安装新版；不兼容旧配置接口。详见 [重新安装说明](文档/07-中文接口迁移.md)。
 
-源码安装先执行 `cargo build --locked --release --bin mackey`（需要 Rust/Cargo、C 编译器、Node.js 与 TypeScript（`tsc`））；发布二进制本身不需要 Rust、Python 或仓库。
+源码安装先执行 `cargo build --locked --release --bin mackey`（需要 Rust/Cargo、C 编译器、原生 TypeScript 编译器（`tsc`））；发布二进制本身不需要 Rust、Python 或仓库。
 
 ```bash
 ./安装.sh          # 可选：--不下载 跳过下载、--保持运行 保留旧服务、--确认执行 免确认
@@ -115,7 +115,7 @@ sudo usermod -aG input "$USER"
 | `mackey 应用` | 生成 + 迁移键位（带备份）+ 重启服务 |
 | `mackey 还原` | 还原 GNOME 键位 |
 | `mackey 停用` | 停用（键盘立刻回到 Linux 原生行为） |
-| `mackey 检查` | 完整离线检查：静态检查、差分校验、隔离安装与卸载、① 原生单元（focusd + 生成器 + 引擎下载，不连 D-Bus）② 扩展契约（隔离带加载真实 `extension.js` + 真实 D-Bus 往返）端到端测试另行运行 `mackey 端到端测试`，需要虚拟键盘权限 |
+| `mackey 检查` | 完整离线检查：静态检查、差分校验、隔离安装与卸载、① 原生单元（focusd + 生成器 + 引擎下载，不连 D-Bus）② 扩展契约（隔离带加载真实 `extension.js` + 真实 D-Bus 往返）端到端测试另行运行 `cargo 测试 --端到端`，需要虚拟键盘权限 |
 | `mackey 卸载` | 卸载并还原；默认清理配置/缓存；`--保留配置` 保留它们，`--预演` 只列清单，`--确认执行` 免确认 |
 
 一键卸载：`./卸载.sh`（默认清理配置，可加 `--保留配置` / `--预演` / `--确认执行`）。
@@ -162,7 +162,7 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 | --- | --- |
 | 桌面 | GNOME（Wayland）；不支持 X11 会话与更旧版本 GNOME（GNOME 50 已移除 X11，扩展 API 变动频繁） |
 | 引擎 | xremap ≥ 0.15；`安装.sh` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `gnome` 特性的发布版本 |
-| 构建 | Rust 稳定版、Cargo、C 编译器、Node.js 与 TypeScript（`tsc`）；`cargo build --locked --release --bin mackey` 构建独立二进制 |
+| 构建 | Rust 稳定版、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）；`cargo build --locked --release --bin mackey` 构建独立二进制 |
 | 运行 | GSettings、systemd 用户会话、GNOME 扩展；不依赖 Python 或源码目录 |
 | 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |
 
@@ -196,14 +196,23 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 
 只固定 Rust Edition 2024，不固定 Rust 工具链版本号；应用版本以 `Cargo.toml` 为唯一事实源。
 
+```bash
+cargo 检查                # 完整离线验收：静态检查、差分、Rust 与真实 GJS 契约
+cargo 测试                # 差分、Rust、隔离安装卸载与真实 GJS 契约
+cargo 测试 --端到端       # 额外运行虚拟键盘测试，需要设备权限
+cargo 格式化              # 格式化 Rust 源码
+cargo 打包                # 构建本机发行包并验证解压后的独立二进制
+cargo 运行 <子命令>       # 从源码构建并执行应用命令
+```
+
 见 [CONTRIBUTING.md](CONTRIBUTING.md)（含中文提交类型约定）与 [AGENTS.md](AGENTS.md)
-（给自动化代理的项目说明）。提交前请跑 `cargo run --quiet -- 检查`。
+（给自动化代理的项目说明）。提交前请跑 `cargo 检查`。
 
 Rust 主程序由 `cargo check`、`rustfmt` 和 `clippy` 检查；
 GNOME 扩展、契约测试与基类桩均以 TypeScript 编写，手写的 `类型声明/GJS环境.d.ts` 描述最小 GJS 类型面。
 `源码/构建.rs` 自动运行严格模式的 `tsc`，将生成的 JavaScript 嵌入二进制；安装、测试和发布 ZIP 共用这份产物。
-两者统一由 `cargo run --quiet -- 类型检查` 驱动，缺少 tsc 或类型错误会明确失败。
-源码树不维护 JS 副本；已发布的二进制不需要 Node.js、tsc 或源码目录。
+两者统一由 `cargo 检查` 驱动，缺少 tsc 或类型错误会明确失败。
+源码树不维护 JS 副本；已发布的二进制不需要编译器或源码目录。
 实现与部署说明见 [文档/05-Rust实现.md](文档/05-Rust实现.md)。
 
 ## 许可证

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[alias]
+"检查" = "run --quiet --locked --bin mackey -- 检查"
+"测试" = "run --quiet --locked --bin mackey -- 测试"
+"打包" = "run --quiet --locked --bin mackey -- 打包"
+"格式化" = "fmt --all"
+"运行" = "run --quiet --locked --bin mackey --"
+"发布附件" = "run --quiet --locked --bin mackey -- 发布附件"

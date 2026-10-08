@@ -30,7 +30,7 @@
 | 还原 | `mackey revert` | `mackey 还原` |
 | 卸载 | `./uninstall.sh --yes` | `./卸载.sh --确认执行` |
 | 自有配置 | `modifier_layout`、`engine`；`apple`/`pc-swap`/`auto` | `修饰键布局`、`引擎`；`苹果`/`微软`/`自动` |
-| 开发验收 | 多个 Make 目标 | `cargo run --quiet --locked -- 检查` |
+| 开发验收 | 多个 Make 目标 | `cargo 检查` |
 
 新版不读取旧别名、字段或布局值；更新时先运行旧版卸载脚本，再安装新版。
 [xremap 外部字段与重新安装步骤](07-中文接口迁移.md)另有说明。

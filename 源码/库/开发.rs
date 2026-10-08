@@ -25,15 +25,7 @@ pub fn 运行(根: &Path, 程序: &str, 参数: &[&str]) -> Result<()> {
     ensure!(状态.success(), "{程序} 检查失败：{状态}");
     Ok(())
 }
-pub fn 格式化() -> Result<()> {
-    运行(&仓库()?, "cargo", &["fmt", "--all"])
-}
-pub fn 类型检查() -> Result<()> {
-    let 根 = 仓库()?;
-    运行(&根, "cargo", &["check", "--locked", "--all-targets"])?;
-    运行(&根, "tsc", &["-p", "tsconfig.json", "--noEmit"])
-}
-pub fn 校验() -> Result<()> {
+fn 校验() -> Result<()> {
     let 根 = 仓库()?;
     let 路径 = 路径集合::发现()?;
     let 临时目录 = tempfile::Builder::new()
@@ -59,14 +51,12 @@ pub fn 校验() -> Result<()> {
 }
 pub fn 测试() -> Result<()> {
     let 根 = 仓库()?;
+    校验()?;
     运行(&根, "cargo", &["build", "--locked"])?;
     运行(&根, "cargo", &["test", "--locked", "--all-targets"])?;
+    crate::验证::扩展(&根)?;
+    println!("✓ Rust、差分与扩展契约测试通过");
     Ok(())
-}
-pub fn 扩展测试() -> Result<()> {
-    let 根 = 仓库()?;
-    运行(&根, "cargo", &["build", "--locked"])?;
-    crate::验证::扩展(&根)
 }
 pub fn 端到端测试() -> Result<()> {
     let 根 = 仓库()?;
@@ -95,7 +85,7 @@ pub fn 检查() -> Result<()> {
             "warnings",
         ],
     )?;
-    类型检查()?;
+    运行(&根, "cargo", &["check", "--locked", "--all-targets"])?;
     let mut 脚本 = vec![
         "命令/mackey".to_owned(),
         "安装.sh".to_owned(),
@@ -118,9 +108,7 @@ pub fn 检查() -> Result<()> {
         serde_json::from_slice::<serde_json::Value>(&内容)
             .with_context(|| format!("解析 {文件}"))?;
     }
-    校验()?;
     测试()?;
-    扩展测试()?;
     println!("✓ 完整离线检查通过");
     Ok(())
 }

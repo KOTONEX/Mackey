@@ -24,7 +24,7 @@
 | 依赖 | 用途 |
 |---|---|
 | Rust 稳定版 / Cargo / C 编译器 | 编译主程序、原生焦点桥、虚拟键盘测试 |
-| Node.js、TypeScript（`tsc`）、ShellCheck | 扩展/契约/基类桩编译、严格类型与 Shell 静态检查 |
+| 原生 TypeScript 编译器（`tsc`）、ShellCheck | 扩展/契约/基类桩编译、严格类型与 Shell 静态检查 |
 | `jq` | 生成器报告解析、迁移计划 |
 | `gjs` | 扩展契约自测 |
 | `gsettings` / `dbus-run-session` | 探测 GNOME 键位、D-Bus |
@@ -41,16 +41,12 @@ cargo install xremap --features gnome
 ## 常用命令
 
 ```bash
-cargo run --quiet -- 检查             # cargo fmt / clippy / Shell / JSON / TypeScript 类型检查
-cargo run --quiet -- 类型检查        # cargo check --all-targets + tsc 检查扩展与契约测试
-cargo run --quiet -- 校验            # 离线跑生成器，校验键名与配置组装
-cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"         # 依据本机 dconf 重新生成配置与行为清单
-cargo run --quiet -- 获取引擎     # 下载 gnome 特性的 xremap 最新发布版本（联网）
-cargo run --quiet -- 测试             # 离线单元测试：focusd + 生成器 + 引擎下载 + 卸载清理 + 安装幂等
-cargo run --quiet -- 扩展测试    # 扩展契约测试（gjs + 真实 D-Bus 往返）
-cargo run --quiet -- 端到端测试         # 端到端「焦点桥 → 按应用分流」（需 input 组与 /dev/uinput）
-cargo run --quiet -- 全部测试         # 上面三套全跑
-cargo run --quiet -- 体检           # 环境体检
+cargo 检查                # 完整离线验收：静态检查、差分、Rust 与真实 GJS 契约
+cargo 测试                # 差分、Rust、隔离安装卸载与真实 GJS 契约
+cargo 测试 --端到端       # 额外运行虚拟键盘测试，需要设备权限
+cargo 格式化              # 格式化 Rust 源码
+cargo 打包                # 构建本机发行包并验证解压后的独立二进制
+cargo 运行 <子命令>       # 从源码构建并执行应用命令
 ```
 
 ## 改行为请只改一处
@@ -58,7 +54,7 @@ cargo run --quiet -- 体检           # 环境体检
 `配置/行为清单.json` 是行为的**唯一事实源**。新增/修改按键映射、冲突迁移、泛化兜底，
 都改这个 JSON，然后运行：
 ```bash
-cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"
+cargo 运行 生成 --文档 "$PWD/文档/03-行为清单.md"
 ```
 
 清单嵌入二进制，修改后先运行 `cargo build --locked`；部署时重新 `mackey 安装`。生成命令会同时更新 `~/.config/mackey/xremap.json`、`relocations.json` 与 `文档/03-行为清单.md`。
@@ -83,8 +79,8 @@ cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"
   | `杂务:` | 构建、依赖、CI、清理等 | chore |
   | `初始化:` | 仓库 / 模块的初始提交 | init |
 
-- 提交前至少跑通 `cargo run --quiet -- 检查` 与 `cargo run --quiet -- 校验`；涉及运行时行为的改动请补上
-  `cargo run --quiet -- 扩展测试` / `cargo run --quiet -- 端到端测试` 的结果说明。
+- 提交前跑通 `cargo 检查`；涉及键盘行为的改动请补上
+  `cargo 测试 --端到端` 的结果说明。
 - PR 描述请填写仓库自带的模板，逐项确认约束检查。
 - 发布：推送 `v*` 标签后由 [release.yml](.github/workflows/release.yml) 自动构建并上传
   发布；应用版本以 `Cargo.toml` 为唯一事实源，发布标签必须是 `v<版本>`。
@@ -109,7 +105,7 @@ cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"
 ## 版本与日志
 
 只固定 Rust Edition 2024，不固定 Rust 工具链版本号。应用版本只修改 Cargo.toml，
-提交 Cargo.lock。`cargo run --quiet -- 变更日志` 和 `cargo run --quiet -- 发布说明`
+提交 Cargo.lock。`cargo 运行 变更日志` 和 `cargo 运行 发布说明`
 根据完整 Git 历史及版本标签生成 builddir/ 下的文档；打包会自动收录，未提交修改不进入日志。
 自有接口及卸载重装说明见 [中文接口迁移](文档/07-中文接口迁移.md)。
 
@@ -123,3 +119,8 @@ cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"
 Cargo 构建自动编译并嵌入这些资源，类型错误或缺少 `tsc` 会停止构建。
 `tsc -p tsconfig.json --noEmit` 只检查类型；单独运行 `tsc -p tsconfig.json` 的输出位于被忽略的 `builddir/类型脚本/`。
 GNOME 安装与 ZIP 使用生成的标准 `extension.js`；源码树不维护 JS 副本。
+
+开发依赖使用原生 TypeScript 编译器 `tsc`（TypeScript 7 的 Linux 可执行文件），无需 Node.js/npm。
+将原生编译器目录加入 PATH；只提供脚本启动器时构建会拒绝。CI 的共用安装步骤见
+[原生编译器 action](.github/actions/原生编译器/action.yml)，下载官方架构包并核对 SHA-512。
+Cargo 别名在源码仓库目录及其子目录可用；应用参数直接跟在 `cargo 运行` 后，无需额外 `--`。

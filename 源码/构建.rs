@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use std::{
     env, fs,
+    io::Read,
+    os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -25,8 +27,20 @@ fn 构建() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("cargo:rerun-if-env-changed=HOME");
     println!("cargo:rerun-if-env-changed=PATH");
+    let 编译器 = env::split_paths(&env::var_os("PATH").unwrap_or_default())
+        .map(|目录| 目录.join("tsc"))
+        .find(|文件| {
+            fs::metadata(文件)
+                .is_ok_and(|属性| 属性.is_file() && 属性.permissions().mode() & 0o111 != 0)
+        })
+        .ok_or("缺少原生 TypeScript 编译器 tsc，请将其目录加入 PATH")?;
+    let mut 标识 = [0; 4];
+    fs::File::open(&编译器)?.read_exact(&mut 标识)?;
+    if 标识 != *b"\x7fELF" {
+        return Err("tsc 必须是 Linux 原生编译器，不能使用脚本启动器".into());
+    }
     let 产物 = 输出.join("类型脚本");
-    let 状态 = Command::new("tsc")
+    let 状态 = Command::new(&编译器)
         .arg("-p")
         .arg(根.join("tsconfig.json"))
         .arg("--outDir")

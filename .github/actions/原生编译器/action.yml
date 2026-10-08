@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: 原生 TypeScript 编译器
+description: 下载并校验官方 Linux 原生 tsc，无需脚本运行时
+runs:
+  using: composite
+  steps:
+    - name: 安装原生 tsc
+      shell: bash
+      run: |
+        set -euo pipefail
+        case "$(uname -m)" in
+          x86_64) tsc_arch=x64 ;;
+          aarch64|arm64) tsc_arch=arm64 ;;
+          *) exit 1 ;;
+        esac
+        tsc_dir="$(mktemp -d "$HOME/.mackey-tsc-XXXXXX")"
+        curl --proto '=https' --proto-redir '=https' -fsSL \
+          "https://registry.npmjs.org/@typescript/typescript-linux-$tsc_arch/latest" \
+          -o "$tsc_dir/metadata.json"
+        tsc_url="$(jq -er '.dist.tarball | select(startswith("https://registry.npmjs.org/"))' "$tsc_dir/metadata.json")"
+        tsc_integrity="$(jq -er '.dist.integrity | select(startswith("sha512-")) | ltrimstr("sha512-")' "$tsc_dir/metadata.json")"
+        curl --proto '=https' --proto-redir '=https' -fsSL "$tsc_url" -o "$tsc_dir/compiler.tgz"
+        tsc_actual="$(openssl dgst -sha512 -binary "$tsc_dir/compiler.tgz" | base64 -w0)"
+        test "$tsc_actual" = "$tsc_integrity"
+        tar -xzf "$tsc_dir/compiler.tgz" -C "$tsc_dir"
+        test -x "$tsc_dir/package/lib/tsc"
+        "$tsc_dir/package/lib/tsc" --version
+        echo "$tsc_dir/package/lib" >> "$GITHUB_PATH"

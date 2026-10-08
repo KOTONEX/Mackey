@@ -10,17 +10,17 @@ Python、PyGObject 或 `busctl`。GNOME 扩展、契约测试与基类桩以 Typ
 cargo build --locked --bin mackey          # target/debug/mackey
 cargo build --locked --release --bin mackey # target/release/mackey
 ./target/release/mackey --help
-cargo run --quiet -- 检查
-dbus-run-session -- cargo run --quiet -- 扩展测试
-cargo run --quiet -- 打包         # builddir/发行/ 中的二进制包与依赖许可文本
+cargo 检查
+cargo 测试
+cargo 打包         # builddir/发行/ 中的二进制包与依赖许可文本
 ```
 
-只固定 Rust Edition 2024，不固定 Rust 版本号或工具链；构建需要支持该 Edition 的 Rust、Cargo、C 编译器、Node.js 与 TypeScript（`tsc`）。应用提交 `Cargo.lock` 并使用 `--locked`。
+只固定 Rust Edition 2024，不固定 Rust 版本号或工具链；构建需要支持该 Edition 的 Rust、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）。应用提交 `Cargo.lock` 并使用 `--locked`。
 发布工作流分别在 Ubuntu 24.04 x86_64/aarch64 runner 上原生构建；产物使用系统 glibc，
 不声称是静态链接或兼容所有旧版发行版。
 
 源码入口优先使用已存在的 debug 二进制，其次 release；两者不存在时用 Cargo 构建。
-修改源码后运行 `cargo build --locked`，或直接 `cargo run --locked --bin mackey -- <子命令>`。
+修改源码后运行 `cargo build --locked`，或直接 `cargo 运行 <子命令>`。
 部署 release 时可直接执行 `target/release/mackey 安装`。
 
 ## 配置与部署
@@ -31,10 +31,10 @@ cargo run --quiet -- 打包         # builddir/发行/ 中的二进制包与依�
 - 提供安装、卸载、启用、停用、生成、探测、应用、还原和日志子命令。
 - 安装后命令和服务都使用 XDG 数据目录中的二进制，移动源码目录不影响运行。
 - 版本、默认行为清单和扩展文件编译时嵌入；修改这些资源后需要重新编译和安装。
-- 默认生成的行为文档写到 XDG 数据目录；`cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"` 显式写仓库文档。
+- 默认生成的行为文档写到 XDG 数据目录；`cargo 运行 生成 --文档 "$PWD/文档/03-行为清单.md"` 显式写仓库文档。
 - `探测` 及 `生成 --报告` 只输出报告。普通探测失败会拒绝生成；离线使用 `--不探测`。
 
-GNOME 键位迁移先保存原始值再写 GSettings；还原失败时保留备份，默认卸载 不删除配置。
+GNOME 键位迁移先保存原始值再写 GSettings；还原失败时保留备份与配置；正常卸载默认清除配置。
 焦点来源和 socket 未就绪时拒绝启动引擎；启用不执行任何全局 Ctrl/Super 交换。
 
 ## 路径边界
@@ -67,12 +67,12 @@ GNOME 键位迁移先保存原始值再写 GSettings；还原失败时保留备�
 X11 不受支持，但程序不作会话类型检测或拦截。
 
 隔离安装/卸载测试和命令桩、扩展测试夹具、虚拟键盘进程编排及发行包验证均由 Rust 执行。
-发布附件通过 `cargo run --quiet --locked -- 发布附件` 生成；需先放齐两个架构的发行包。
+发布附件通过 `cargo 发布附件` 生成；需先放齐两个架构的发行包。
 源码快照仍调用标准 `git archive`，gzip、tar、扩展 ZIP 与 SHA-256 清单使用 Rust 库。
 Bash 只保留三个启动壳；GNOME 扩展、真实 GJS 契约和基类桩均以 TypeScript 编写，生成 JS 后嵌入二进制。
 
 ## 扩展编译
 
-构建需要 Node.js 与 TypeScript（`tsc`），`源码/构建.rs` 在 HOME 内的 Cargo OUT_DIR 生成资源。
+构建需要 原生 TypeScript 编译器（`tsc`），`源码/构建.rs` 在 HOME 内的 Cargo OUT_DIR 生成资源。
 安装、扩展契约和发布附件引用相同的嵌入字节，安装目录与扩展 ZIP 不包含 TypeScript 源码。
 已发行的二进制和生成的 GNOME 扩展无需 TypeScript 编译器。

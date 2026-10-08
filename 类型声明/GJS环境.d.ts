@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2026 Mackey contributors
 //
 // GJS 运行时与环境的最小类型面：只声明本仓库 TypeScript 代码用到的 API。
-// GNOME Shell / GJS 不发布官方 TypeScript 类型，@girs/* 又需要 npm 依赖；
-// 这份手写声明由 `cargo run --quiet -- 类型检查`（tsc）与编辑器共同消费。
+// GNOME Shell / GJS 不发布官方 TypeScript 类型；
+// 这份手写声明由 Cargo 构建时的原生 tsc与编辑器共同消费。
 
 /** MetaWindow 上本仓库用到的只读接口（部分窗口类型上这些方法会抛错，调用方自己防御）。 */
 interface 窗口接口 {

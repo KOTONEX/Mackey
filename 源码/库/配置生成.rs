@@ -891,7 +891,7 @@ fn 生成行为文档(
     let gnome: Vec<_> = c.条目.iter().filter(|e| e.归属 == "gnome").collect();
     let generated: Vec<_> = g.条目.iter().filter(|e| e.自动生成).collect();
     let mut doc = format!(
-        "# 行为清单（自动生成）\n\n> 由 `配置/行为清单.json` + GNOME 键位探测结果生成；修改 JSON 后运行 `cargo run --quiet -- 生成 --文档 文档/03-行为清单.md`。\n\n- GNOME 已占用加速键：**{}** 个\n- 需要迁移的 GNOME 键位：**{}** 条\n- 归属分类：遵循 macOS **{}** 条 · 遵循 GNOME 默认 **{}** 条 · 泛化兜底 **{}** 条\n\n## 一、遵循 macOS 的键位（由 Mackey 改写）\n\n| macOS | 行为 | 触发 | 默认输出 | 终端输出 | 文件管理器 | 状态 | 冲突 / 备注 |\n|---|---|---|---|---|---|---|---|\n",
+        "# 行为清单（自动生成）\n\n> 由 `配置/行为清单.json` + GNOME 键位探测结果生成；修改 JSON 后运行 `cargo 运行 生成 --文档 文档/03-行为清单.md`。\n\n- GNOME 已占用加速键：**{}** 个\n- 需要迁移的 GNOME 键位：**{}** 条\n- 归属分类：遵循 macOS **{}** 条 · 遵循 GNOME 默认 **{}** 条 · 泛化兜底 **{}** 条\n\n## 一、遵循 macOS 的键位（由 Mackey 改写）\n\n| macOS | 行为 | 触发 | 默认输出 | 终端输出 | 文件管理器 | 状态 | 冲突 / 备注 |\n|---|---|---|---|---|---|---|---|\n",
         p.已占用.len(),
         g.迁移计划.len(),
         macos.len(),

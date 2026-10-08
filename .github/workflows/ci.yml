@@ -35,15 +35,15 @@ jobs:
           sudo apt-get install -y jq shellcheck gjs dbus-x11 build-essential cmake
           rustup toolchain install stable --profile minimal --component rustfmt --component clippy
           rustup default stable
-          npm install -g typescript
+      - uses: ./.github/actions/原生编译器
       - name: 统一离线检查
         run: |
           cd "$HOME/mackey-ci"
-          cargo run --quiet --locked -- 检查
+          cargo 检查
       - name: 验证发行打包
         run: |
           cd "$HOME/mackey-ci"
-          cargo run --quiet --locked -- 打包
+          cargo 打包
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-ci-${{ matrix.arch }}

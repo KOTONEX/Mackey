@@ -41,26 +41,23 @@ Cargo.toml / Cargo.lock            Rust 应用与依赖锁文件
 ## 常用命令
 
 ```bash
-cargo run --quiet -- 检查             # cargo fmt / clippy / Shell / JSON / tsc
-cargo run --quiet -- 类型检查        # cargo check --all-targets + tsc（CI 严格）
-cargo run --quiet -- 校验            # 离线运行 mackey 生成 --不探测
-cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"         # 依据本机 dconf 重新生成配置与 文档/03-行为清单.md
-cargo run --quiet -- 获取引擎     # 下载 gnome 特性的 xremap 最新发布版本（联网）
-cargo run --quiet -- 测试             # 离线单元测试：focusd + 生成器 + 引擎下载 + 卸载清理 + 安装幂等（CI 可跑）
-cargo run --quiet -- 扩展测试    # 原生夹具运行真实 GJS 契约（需 gjs + D-Bus）
-cargo run --quiet -- 端到端测试         # 原生 uinput 编排（需 input 组 + /dev/uinput）
-cargo run --quiet -- 全部测试         # Rust + 隔离安装/卸载 + 扩展契约 + 虚拟键盘
+cargo 检查                # 完整离线验收：静态检查、差分、Rust 与真实 GJS 契约
+cargo 测试                # 差分、Rust、隔离安装卸载与真实 GJS 契约
+cargo 测试 --端到端       # 额外运行虚拟键盘测试，需要设备权限
+cargo 格式化              # 格式化 Rust 源码
+cargo 打包                # 构建本机发行包并验证解压后的独立二进制
+cargo 运行 <子命令>       # 从源码构建并执行应用命令
 ```
 
-离线环境或没有 GNOME 会话时：用 `cargo run --quiet -- 校验` 验证生成器；
-`cargo run --quiet -- 检查` 不依赖会话。`cargo run --quiet -- 端到端测试` 只使用虚拟键盘，但需要 `input` 组读设备。
+离线环境或没有 GNOME 会话时：用 `cargo 测试` 验证生成器；
+`cargo 检查` 不依赖会话。`cargo 测试 --端到端` 额外使用虚拟键盘，需要 `input` 组读设备和 uinput 写权限。
 
 ## 行为改动流程
 
 1. 只改 `配置/行为清单.json`（映射、冲突迁移、泛化兜底规则）。
    每条显式条目必须声明 `归属`（`macos` = 本工具改写；`gnome` = 保持 GNOME 默认），
    生成器会校验 归属 与 `策略`/`目标组合` 一致，不一致直接报错。
-2. 修改嵌入资源后重新编译并安装二进制；运行 `cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"`，它会重写 `xremap.json`、`relocations.json` 与 `文档/03-行为清单.md`。
+2. 修改嵌入资源后重新编译并安装二进制；运行 `cargo 运行 生成 --文档 "$PWD/文档/03-行为清单.md"`，它会重写 `xremap.json`、`relocations.json` 与 `文档/03-行为清单.md`。
 3. 不要手工编辑 `文档/03-行为清单.md`。
 
 ## 已知环境前提
@@ -79,7 +76,7 @@ cargo run --quiet -- 全部测试         # Rust + 隔离安装/卸载 + 扩展�
 ## 提交
 
 提交信息使用中文类型前缀（`新增:` / `修复:` / `文档:` / `测试:` / `重构:` / `杂务:` / `初始化:`，
-见 [CONTRIBUTING.md](CONTRIBUTING.md)）；提交前跑 `cargo run --quiet -- 检查`。
+见 [CONTRIBUTING.md](CONTRIBUTING.md)）；提交前跑 `cargo 检查`。
 
 ## 用户运行时 IPC 例外
 
@@ -95,7 +92,7 @@ cargo run --quiet -- 全部测试         # Rust + 隔离安装/卸载 + 扩展�
   `mackey` 项目前缀保留原名。部署路径与外部协议文件名保留约定名称，见中文接口文档。
 - 只固定 Rust Edition 2024，不固定 Rust 版本号；CI 使用 stable。
 - 应用版本唯一事实源为 Cargo.toml；Cargo.lock 纳入版本管理。
-- 完成改动必须运行 `cargo run --quiet -- 检查`，同时报告未运行测试的具体原因。
+- 完成改动必须运行 `cargo 检查`，同时报告未运行测试的具体原因。
 - 不手工维护 CHANGELOG.md；Git 提交标题与版本标签生成 builddir/CHANGELOG.md
   和 builddir/发布说明.md。CI 需要完整检出历史和标签，未提交的改动不会进入日志。
 - 提交、推送、打标签与发布分别按用户授权执行，不自行修改全局 Git 身份。
@@ -112,6 +109,12 @@ cargo run --quiet -- 全部测试         # Rust + 隔离安装/卸载 + 扩展�
 ## TypeScript 构建
 
 - 所有自有 GJS 代码以 `.ts` 维护，包括扩展、契约测试和基类桩；不得提交手写或生成的 JS 副本。
-- Cargo 的 `源码/构建.rs` 调用严格模式 `tsc`，产物位于 HOME 下的 Cargo OUT_DIR；构建需要 Node.js 与 TypeScript。
+- Cargo 的 `源码/构建.rs` 调用严格模式 `tsc`，产物位于 HOME 下的 Cargo OUT_DIR；构建使用原生 TypeScript 编译器，不依赖 Node.js 或 npm。
 - 安装的 `extension.js`、真实 GJS 测试和扩展 ZIP 必须使用同一次编译嵌入的产物。ZIP 仅含 `extension.js` 和 `metadata.json`。
 - 缺少编译器或类型错误必须中止构建，不得回退到旧产物；运行发行二进制不依赖 tsc。
+
+## 开发入口
+
+- `.cargo/config.toml` 统一提供 `cargo 检查`、`cargo 测试`、`cargo 打包`、`cargo 格式化` 和 `cargo 运行 <子命令>`；别名始终通过 Cargo 构建当前源码，不依赖已安装的 Mackey。
+- `cargo 检查` 包含静态检查和全部离线测试；`cargo 测试` 包含差分、Rust 与真实 GJS 契约，`--端到端` 显式加跑设备测试。
+- 构建只接受 Linux 原生 ELF `tsc`；不得新增 Node.js/npm 安装或脚本启动器依赖。CI 使用共用 action 下载官方原生编译器并校验 SHA-512。

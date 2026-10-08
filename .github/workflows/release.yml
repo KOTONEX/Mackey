@@ -34,7 +34,7 @@ jobs:
           sudo apt-get install -y jq shellcheck gjs dbus-x11 build-essential cmake
           rustup toolchain install stable --profile minimal --component rustfmt --component clippy
           rustup default stable
-          npm install -g typescript
+      - uses: ./.github/actions/原生编译器
       - name: 校验发布标签与 Cargo 版本
         env:
           RELEASE_REF: ${{ github.ref }}
@@ -46,8 +46,8 @@ jobs:
       - name: 统一检查与原生发行包
         run: |
           cd "$HOME/mackey-ci"
-          cargo run --quiet --locked -- 检查
-          cargo run --quiet --locked -- 打包
+          cargo 检查
+          cargo 打包
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-linux-${{ matrix.arch }}
@@ -77,7 +77,7 @@ jobs:
           mkdir -p "$HOME/mackey-release/builddir/发行"
           rustup toolchain install stable --profile minimal
           rustup default stable
-          npm install -g typescript
+      - uses: ./.github/actions/原生编译器
       - uses: actions/download-artifact@v8
         with:
           pattern: mackey-linux-*
@@ -90,7 +90,7 @@ jobs:
       - name: 打包源码与 GNOME 扩展、生成校验和
         run: |
           cd "$HOME/mackey-release"
-          cargo run --quiet --locked -- 发布附件
+          cargo 发布附件
       - name: 按主分支归属发布 Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:

@@ -6,9 +6,6 @@ target/
 dist/
 builddir/
 
-# JS 类型检查（tsc 只做 noEmit；本地装 typescript 时的依赖目录）
-node_modules/
-
 # 本地运行与测试产物
 *.log
 
