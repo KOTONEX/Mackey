@@ -25,6 +25,29 @@ fn 执行() -> anyhow::Result<()> {
             json!({"程序":名称.to_string_lossy(),"参数":参数})
         )?;
     }
+    if 名称 == "systemctl" {
+        let 单元目录 =
+            std::path::PathBuf::from(env::var_os("XDG_CONFIG_HOME").unwrap()).join("systemd/user");
+        if 参数.get(1).map(String::as_str) == Some("show") {
+            let 单元 = 参数.last().unwrap();
+            println!(
+                "{}",
+                if 单元目录.join(单元).exists() {
+                    "loaded"
+                } else {
+                    "not-found"
+                }
+            );
+        }
+        if 参数.get(1).map(String::as_str) == Some("disable") {
+            for 单元 in 参数.iter().filter(|参数| 参数.ends_with(".service")) {
+                anyhow::ensure!(
+                    单元目录.join(单元).exists(),
+                    "Failed to disable unit: Unit {单元} does not exist"
+                );
+            }
+        }
+    }
     if 名称 == "gsettings" {
         if 参数.first().map(String::as_str) == Some("set")
             && 参数.get(1).map(String::as_str) == Some("org.gnome.desktop.wm.keybindings")

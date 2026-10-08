@@ -156,6 +156,41 @@ fn 所有安装入口预检失败时零写入() {
     }
 }
 #[test]
+fn 首次安装及仅有焦点服务时不禁用缺失单元() {
+    for 有焦点服务 in [false, true] {
+        let 沙箱 = 沙箱::新建();
+        if 有焦点服务 {
+            写入(
+                沙箱.路径(".config/systemd/user/mackey-focusd.service"),
+                "OLD",
+            );
+        }
+        沙箱.安装();
+        let 禁用: Vec<_> = 沙箱
+            .调用()
+            .into_iter()
+            .filter(|调用| 调用["程序"] == "systemctl" && 调用["参数"][1] == "disable")
+            .collect();
+        assert_eq!(禁用.len(), usize::from(有焦点服务));
+        if 有焦点服务 {
+            assert_eq!(
+                禁用[0]["参数"],
+                json!(["--user", "disable", "--now", "mackey-focusd.service"])
+            );
+        }
+        assert!(
+            沙箱
+                .路径(".config/systemd/user/mackey-engine.service")
+                .is_file()
+        );
+        assert!(
+            沙箱
+                .路径(".config/systemd/user/mackey-focusd.service")
+                .is_file()
+        );
+    }
+}
+#[test]
 fn 单次原生安装收敛缺失字段和陈旧产物() {
     let 沙箱 = 沙箱::新建();
     沙箱.安装();

@@ -233,7 +233,12 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
         eprintln!("! 引擎下载失败，继续安装扩展与服务：{err:#}");
     }
     if !保持运行 {
-        用户服务命令(&["disable", "--now", 服务列表[0], 服务列表[1]])?;
+        for 服务 in 服务列表 {
+            let 状态 = 用户服务命令(&["show", "--property=LoadState", "--value", 服务])?;
+            if String::from_utf8_lossy(&状态.stdout).trim() != "not-found" {
+                用户服务命令(&["disable", "--now", 服务])?;
+            }
+        }
         let _ = 用户服务命令(&["reset-failed", 服务列表[0], 服务列表[1]]);
         for 服务 in 服务列表 {
             移除文件(路径, &路径.服务目录.join("default.target.wants").join(服务))?;
