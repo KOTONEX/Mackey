@@ -1,61 +1,52 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# SPDX-FileCopyrightText: 2026 Mackey contributors
 name: 持续集成
-
 on:
   push:
-    branches: [main]
+    branches: [main, rust]
   pull_request:
-
+  workflow_dispatch:
 permissions:
   contents: read
-
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  static:
-    name: 静态检查与离线测试
-    runs-on: ubuntu-latest
+  check:
+    name: 完整检查 ${{ matrix.arch }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v7
-
-      - name: 安装依赖
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq shellcheck
-
-      - name: 安装 Python
-        uses: actions/setup-python@v7
+      - uses: actions/checkout@v7
         with:
-          python-version: "3.14"
-
-      - name: 安装类型检查工具（mypy / tsc）
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 准备 HOME 内的源码与开发依赖
         run: |
-          python3 -m pip install mypy
-          npm install -g typescript
-
-      - name: 类型检查（严格：工具缺失即失败）
-        run: MACKEY_TYPECHECK_STRICT=1 make typecheck
-
-      - name: 静态检查
-        run: make lint
-
-      - name: 生成/构建校验
-        run: make check
-
-      - name: 离线单元测试
-        run: make test
-
-  extension-contract:
-    name: 扩展契约测试
-    runs-on: ubuntu-latest
-    steps:
-      - name: 检出代码
-        uses: actions/checkout@v7
-
-      - name: 安装依赖
-        run: |
+          cp -a "$GITHUB_WORKSPACE" "$HOME/mackey-ci"
           sudo apt-get update
-          sudo apt-get install -y gjs dbus-x11
-
-      - name: 扩展契约测试
-        run: dbus-run-session -- make test-contract
+          sudo apt-get install -y jq shellcheck gjs dbus-x11 build-essential cmake
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+          rustup default stable
+          npm install -g typescript
+      - name: 统一离线检查
+        run: |
+          cd "$HOME/mackey-ci"
+          cargo run --quiet --locked -- 检查
+      - name: 验证发行打包
+        run: |
+          cd "$HOME/mackey-ci"
+          cargo run --quiet --locked -- 打包
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mackey-ci-${{ matrix.arch }}
+          path: ~/mackey-ci/builddir/发行/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
