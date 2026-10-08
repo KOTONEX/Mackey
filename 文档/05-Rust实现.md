@@ -16,8 +16,12 @@ cargo 打包         # builddir/发行/ 中的二进制包与依赖许可文本
 ```
 
 只固定 Rust Edition 2024，不固定 Rust 版本号或工具链；构建需要支持该 Edition 的 Rust、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）。应用提交 `Cargo.lock` 并使用 `--locked`。
-发布工作流分别在 Ubuntu 24.04 x86_64/aarch64 runner 上原生构建；产物使用系统 glibc，
+发布工作流在 `ubuntu-latest` x86_64 与 `ubuntu-26.04-arm` aarch64 runner 上原生构建；产物使用各 runner 的系统 glibc，
 不声称是静态链接或兼容所有旧版发行版。
+
+CI 的 Rust 使用 `stable`；TypeScript 通过官方 `gh` 客户端获取微软 GitHub 最新正式发行的
+Linux 架构包，校验发行资产 SHA-256 后将原生 `tsc` 加入 PATH。编译器不锁定具体版本，
+CI 记录实际版本；本地和 CI 构建均无需 Node.js/npm。
 
 源码入口优先使用已存在的 debug 二进制，其次 release；两者不存在时用 Cargo 构建。
 修改源码后运行 `cargo build --locked`，或直接 `cargo 运行 <子命令>`。

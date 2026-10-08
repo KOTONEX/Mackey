@@ -166,6 +166,8 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 | 运行 | GSettings、systemd 用户会话、GNOME 扩展；不依赖 Python 或源码目录 |
 | 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |
 
+CI 直接获取微软 GitHub 最新正式发行的原生 `tsc` 并校验 SHA-256，本地和 CI 构建均无需 Node/npm。本地构建方式见 [贡献指南](CONTRIBUTING.md#typescript-资源)。
+
 ## 故障排查
 
 - **按键没变化**：`mackey 状态` 看引擎服务是否在跑；`mackey 日志 50` 看引擎日志。

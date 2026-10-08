@@ -1,28 +1,31 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-name: 原生 TypeScript 编译器
-description: 下载并校验官方 Linux 原生 tsc，无需脚本运行时
+name: 最新稳定原生 TypeScript
+description: 从微软官方 GitHub 正式发行获取并校验原生编译器，无需 Node/npm
 runs:
   using: composite
   steps:
-    - name: 安装原生 tsc
+    - name: 获取并校验官方原生编译器
       shell: bash
       run: |
         set -euo pipefail
-        case "$(uname -m)" in
-          x86_64) tsc_arch=x64 ;;
-          aarch64|arm64) tsc_arch=arm64 ;;
-          *) exit 1 ;;
+        case "$RUNNER_ARCH" in
+          X64) arch=x64 ;;
+          ARM64) arch=arm64 ;;
+          *) echo "不支持的 runner 架构：$RUNNER_ARCH" >&2; exit 1 ;;
         esac
-        tsc_dir="$(mktemp -d "$HOME/.mackey-tsc-XXXXXX")"
-        curl --proto '=https' --proto-redir '=https' -fsSL \
-          "https://registry.npmjs.org/@typescript/typescript-linux-$tsc_arch/latest" \
-          -o "$tsc_dir/metadata.json"
-        tsc_url="$(jq -er '.dist.tarball | select(startswith("https://registry.npmjs.org/"))' "$tsc_dir/metadata.json")"
-        tsc_integrity="$(jq -er '.dist.integrity | select(startswith("sha512-")) | ltrimstr("sha512-")' "$tsc_dir/metadata.json")"
-        curl --proto '=https' --proto-redir '=https' -fsSL "$tsc_url" -o "$tsc_dir/compiler.tgz"
-        tsc_actual="$(openssl dgst -sha512 -binary "$tsc_dir/compiler.tgz" | base64 -w0)"
-        test "$tsc_actual" = "$tsc_integrity"
-        tar -xzf "$tsc_dir/compiler.tgz" -C "$tsc_dir"
-        test -x "$tsc_dir/package/lib/tsc"
-        "$tsc_dir/package/lib/tsc" --version
-        echo "$tsc_dir/package/lib" >> "$GITHUB_PATH"
+        asset="typescript-linux-$arch.tgz"
+        release="$(gh api repos/microsoft/TypeScript/releases/latest)"
+        tag="$(jq -er 'select(.prerelease == false and .draft == false) | .tag_name' <<< "$release")"
+        digest="$(jq -er --arg name "$asset" '.assets[] | select(.name == $name) | .digest | select(startswith("sha256:")) | ltrimstr("sha256:")' <<< "$release")"
+        mkdir -p "$HOME/.local/share/mackey-ci-tools"
+        compiler_dir="$(mktemp -d "$HOME/.local/share/mackey-ci-tools/tsc.XXXXXX")"
+        gh release download "$tag" --repo microsoft/TypeScript --pattern "$asset" --dir "$compiler_dir"
+        printf '%s  %s\n' "$digest" "$compiler_dir/$asset" | sha256sum --check --status
+        tar -xzf "$compiler_dir/$asset" -C "$compiler_dir"
+        tsc_dir="$compiler_dir/package/lib"
+        magic="$(head -c 4 "$tsc_dir/tsc" | od -An -tx1 | tr -d ' \n')"
+        test "$magic" = 7f454c46
+        echo "TypeScript 官方稳定发行：$tag；架构：$arch"
+        "$tsc_dir/tsc" --version
+        rustc --version
+        echo "$tsc_dir" >> "$GITHUB_PATH"

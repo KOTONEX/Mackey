@@ -120,7 +120,18 @@ Cargo 构建自动编译并嵌入这些资源，类型错误或缺少 `tsc` 会�
 `tsc -p tsconfig.json --noEmit` 只检查类型；单独运行 `tsc -p tsconfig.json` 的输出位于被忽略的 `builddir/类型脚本/`。
 GNOME 安装与 ZIP 使用生成的标准 `extension.js`；源码树不维护 JS 副本。
 
-开发依赖使用原生 TypeScript 编译器 `tsc`（TypeScript 7 的 Linux 可执行文件），无需 Node.js/npm。
-将原生编译器目录加入 PATH；只提供脚本启动器时构建会拒绝。CI 的共用安装步骤见
-[原生编译器 action](.github/actions/原生编译器/action.yml)，下载官方架构包并核对 SHA-512。
+开发依赖使用最新稳定的原生 TypeScript 编译器 `tsc`（Linux 可执行文件），无需 Node.js/npm。
+将原生编译器目录加入 PATH；只提供脚本启动器时构建会拒绝。
+
+CI 通过官方 `gh` 客户端读取 [微软 TypeScript 最新正式发行](https://github.com/microsoft/TypeScript/releases/latest)，
+下载对应 Linux x64/ARM64 原生编译器包，校验发行资产的 SHA-256 后加入 PATH。
+工具链不锁具体版本，CI 记录实际版本；本地、CI 和发行程序均无需 Node.js/npm。
+GitHub 官方 Actions 自身的内部运行时由平台管理，与本项目编译工具链分开。
 Cargo 别名在源码仓库目录及其子目录可用；应用参数直接跟在 `cargo 运行` 后，无需额外 `--`。
+
+## 工具链版本
+
+工具链在可行时一律使用最新稳定版：Rust 为 `stable`，只固定 Edition 2024；
+TypeScript 为微软官方 GitHub 最新正式发行的原生编译器。不使用 beta、nightly 或 next。系统开发工具使用 runner 稳定仓库中的可用版本，
+GitHub Actions 使用官方最新稳定主版本标签；因平台或兼容性必须固定旧版时，要在规范与工作流中说明原因。
+应用依赖的 `Cargo.lock` 与 `--locked` 保留，工具链频道与应用依赖锁定分别管理。

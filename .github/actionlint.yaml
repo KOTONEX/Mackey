@@ -1,0 +1,6 @@
+# 官方已提供该托管标签，补充 actionlint 尚未更新的内置标签表。
+# https://github.com/actions/runner-images#available-images
+# 此配置只影响本地校验，不改变工作流的托管类型。
+self-hosted-runner:
+  labels:
+    - ubuntu-26.04-arm
