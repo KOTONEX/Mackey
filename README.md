@@ -45,18 +45,18 @@ Mackey 按焦点应用分三套映射：
 
 `安装.sh` 会自动下载与你的 **指令集架构**匹配的 xremap 最新发布版本
 （Mackey 仅支持 GNOME Wayland，固定取 xremap 的 `gnome` 特性），再安装 GNOME 扩展
-与 systemd 用户服务。持久文件全程只写 `$HOME`，不需要 sudo；焦点 socket 使用用户运行时目录。脚本会先校验会话：
-非 GNOME 桌面或 X11 会话都会警告并中止（GNOME 50 已移除 X11 会话，本项目不跟随更旧版本 GNOME）。
+与 systemd 用户服务。持久文件全程只写 `$HOME`，不需要 sudo；焦点 socket 使用用户运行时目录。原生安装命令会先校验 GNOME 桌面，非 GNOME 时中止。
+本项目仅支持 GNOME Wayland，不支持 X11；程序不检测或拦截 X11 会话。
 
 从 Python 版更新时，请先运行该版本的卸载脚本，再安装新版；不兼容旧配置接口。详见 [重新安装说明](文档/07-中文接口迁移.md)。
 
-源码安装先执行 `cargo build --locked --release`（需要 Rust/Cargo 与 C 编译器）；发布二进制本身不需要 Rust、Python 或仓库。
+源码安装先执行 `cargo build --locked --release --bin mackey`（需要 Rust/Cargo 与 C 编译器）；发布二进制本身不需要 Rust、Python 或仓库。
 
 ```bash
 ./安装.sh          # 可选：--不下载 跳过下载、--保持运行 保留旧服务、--确认执行 免确认
 ```
 
-脚本**可重复执行且幂等**：同一版本已有引擎 / 配置 / 服务时，会按当前指令集架构 + 会话类型重新
+脚本**可重复执行且幂等**：同一版本已有引擎 / 配置 / 服务时，会按当前指令集架构重新
 对齐引擎、重写服务与扩展、清理陈旧 socket 与自启软链，结果与「全新安装」一致
 （`--保持运行` 可保留正在运行的服务；`config.json` 里已有的字段值会保留，缺失字段自动补齐）。
 
@@ -116,9 +116,9 @@ sudo usermod -aG input "$USER"
 | `mackey 还原` | 还原 GNOME 键位 |
 | `mackey 停用` | 停用（键盘立刻回到 Linux 原生行为） |
 | `mackey 检查` | 完整离线检查：静态检查、差分校验、隔离安装与卸载、① 原生单元（focusd + 生成器 + 引擎下载，不连 D-Bus）② 扩展契约（隔离带加载真实 `extension.js` + 真实 D-Bus 往返）端到端测试另行运行 `mackey 端到端测试`，需要虚拟键盘权限 |
-| `mackey 卸载` | 卸载并还原；`--清除配置` 连配置/缓存一起清理，`--预演` 只列清单，`--确认执行` 免确认 |
+| `mackey 卸载` | 卸载并还原；默认清理配置/缓存；`--保留配置` 保留它们，`--预演` 只列清单，`--确认执行` 免确认 |
 
-一键卸载：`./卸载.sh`（默认 `--清除配置`，可加 `--保留配置` / `--预演` / `--确认执行`）。
+一键卸载：`./卸载.sh`（默认清理配置，可加 `--保留配置` / `--预演` / `--确认执行`）。
 
 ## 配置
 
@@ -162,7 +162,7 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 | --- | --- |
 | 桌面 | GNOME（Wayland）；不支持 X11 会话与更旧版本 GNOME（GNOME 50 已移除 X11，扩展 API 变动频繁） |
 | 引擎 | xremap ≥ 0.15；`安装.sh` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `gnome` 特性的发布版本 |
-| 构建 | Rust 稳定版、Cargo、C 编译器；`cargo build --locked --release` 构建独立二进制 |
+| 构建 | Rust 稳定版、Cargo、C 编译器；`cargo build --locked --release --bin mackey` 构建独立二进制 |
 | 运行 | GSettings、systemd 用户会话、GNOME 扩展；不依赖 Python 或源码目录 |
 | 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |
 

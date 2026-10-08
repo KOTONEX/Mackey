@@ -61,13 +61,12 @@ pub fn 测试() -> Result<()> {
     let 根 = 仓库()?;
     运行(&根, "cargo", &["build", "--locked"])?;
     运行(&根, "cargo", &["test", "--locked", "--all-targets"])?;
-    运行(&根, "bash", &["测试/卸载清理.sh"])?;
-    运行(&根, "bash", &["测试/安装幂等.sh"])
+    Ok(())
 }
 pub fn 扩展测试() -> Result<()> {
     let 根 = 仓库()?;
     运行(&根, "cargo", &["build", "--locked"])?;
-    运行(&根, "bash", &["测试/扩展契约.sh"])
+    crate::验证::扩展(&根)
 }
 pub fn 端到端测试() -> Result<()> {
     let 根 = 仓库()?;
@@ -78,16 +77,9 @@ pub fn 端到端测试() -> Result<()> {
     )?;
     let 路径 = 路径集合::发现()?;
     let 引擎 = crate::服务::查找引擎(&路径).context("没有 xremap 引擎，请先获取引擎")?;
-    for 脚本 in ["测试/应用分流.sh", "测试/吞键例外.sh"] {
-        let 状态 = Command::new("bash")
-            .arg(脚本)
-            .current_dir(&根)
-            .env("MACKEY_ENGINE", &引擎)
-            .status()?;
-        ensure!(状态.success(), "{脚本} 失败");
-    }
-    Ok(())
+    crate::端到端::执行(&根, &引擎)
 }
+
 pub fn 检查() -> Result<()> {
     let 根 = 仓库()?;
     运行(&根, "cargo", &["fmt", "--all", "--", "--check"])?;
@@ -109,12 +101,6 @@ pub fn 检查() -> Result<()> {
         "安装.sh".to_owned(),
         "卸载.sh".to_owned(),
     ];
-    for 条目 in std::fs::read_dir(根.join("测试"))? {
-        let 文件 = 条目?.path();
-        if 文件.extension().is_some_and(|后缀| 后缀 == "sh") {
-            脚本.push(文件.strip_prefix(&根)?.to_string_lossy().into_owned());
-        }
-    }
     脚本.sort();
     for 文件 in &脚本 {
         运行(&根, "bash", &["-n", 文件])?;

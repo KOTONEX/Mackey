@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 [package]
 name = "mackey"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2024"
 publish = false
 license = "AGPL-3.0-or-later"
 description = "GNOME Wayland 上的 macOS 键位模拟"
+default-run = "mackey"
 
 [dependencies]
 anyhow = "1"
@@ -20,6 +21,8 @@ tempfile = "3"
 zbus = "5"
 zip = { version = "6", default-features = false, features = ["deflate"] }
 ctrlc = { version = "3", features = ["termination"] }
+tar = "0.4"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 
 [profile.release]
 lto = "thin"
@@ -31,6 +34,14 @@ path = "源码/库/入口.rs"
 [[bin]]
 name = "mackey"
 path = "源码/程序/主程序.rs"
+
+[[bin]]
+name = "mackey-测试桩"
+path = "测试/命令桩.rs"
+
+[[test]]
+name = "安装卸载"
+path = "测试/安装卸载.rs"
 
 [[example]]
 name = "虚拟键盘"

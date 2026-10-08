@@ -1,7 +1,7 @@
 # main 与 rust：结构、用法、代码量和性能
 
 2026-10-08 实测。基线为 Python 版 `main` 的 `69b000f`（1.3.0），
-比较对象为本分支的 Rust 2.0.0 实现。Rust 仅固定 Edition 2024。
+结构与用法对应当前 Rust 分支；代码量与性能为保存的测量快照。Rust 仅固定 Edition 2024。
 本文数据对应分支源码的 release 构建，发布附件应以对应标签的源码为准。
 
 ## 项目结构
@@ -9,7 +9,7 @@
 | 项目 | main | rust |
 |---|---|---|
 | 用户入口 | Bash `bin/mackey`，由脚本编排各工具 | 原生 `mackey`，`命令/mackey` 仅启动已构建程序 |
-| 主要逻辑 | Python 生成器、焦点桥、下载器、键盘识别 + Bash 安装/服务管理 | `源码/库/` 中 10 个功能模块与 1 个库入口，统一配置、服务、下载、焦点、开发与打包逻辑 |
+| 主要逻辑 | Python 生成器、焦点桥、下载器、键盘识别 + Bash 安装/服务管理 | `源码/库/` 中 12 个功能模块与 1 个库入口，统一配置、服务、下载、焦点、开发与打包逻辑 |
 | GNOME 扩展 | JavaScript，通过 D-Bus 暴露焦点 | 仍为 GNOME 必需的 JavaScript，协议一致 |
 | 运行环境 | Bash、Python，焦点桥使用 PyGObject/GI 或 busctl | 原生可执行文件与系统 glibc；无需 Python/GI 运行时 |
 | 实际按键映射 | 外部 xremap | 仍由外部 xremap 执行 |
@@ -23,7 +23,7 @@
 
 | 操作 | main | rust |
 |---|---|---|
-| 安装 | `./install.sh` | 源码先 `cargo build --locked --release`，再 `./安装.sh`；二进制包运行 `./mackey 安装` |
+| 安装 | `./install.sh` | 源码先 `cargo build --locked --release --bin mackey`，再 `./安装.sh`；二进制包运行 `./mackey 安装` |
 | 健康检查 | `mackey doctor` | `mackey 体检` |
 | 生成 | `mackey generate --no-probe` | `mackey 生成 --不探测` |
 | 应用 | `mackey apply` | `mackey 应用` |
@@ -36,6 +36,8 @@
 [xremap 外部字段与重新安装步骤](07-中文接口迁移.md)另有说明。
 
 ## 代码量
+
+以下代码量与性能为已保存的测量快照；后续安装、测试与发布编排的 Rust 迁入不包含在该快照中。
 
 用 tokei 统计 Git 快照中的实际代码行，不包含注释、空行、JSON/YAML/TOML、Markdown、
 Cargo.lock、许可文本或构建产物；包含测试和类型声明。
@@ -94,7 +96,7 @@ Python 3.14.7、rustc 1.99.0；Rust 使用带锁文件的宿主 `release` 构建
 
 ## 验证边界
 
-当前分支通过格式、Clippy、Rust/GJS 类型、ShellCheck、115 条旧版映射差分、20 项 Rust
+当前分支通过格式、Clippy、Rust/GJS 类型、ShellCheck、115 条旧版映射差分、Rust 单元与集成
 测试、隔离安装/卸载、旧配置拒绝与原文保留、13 项 GJS/D-Bus 契约断言和发行包解压验证。
 
 真实键盘端到端测试未运行：本机已有全局捕获键盘的 xremap，双引擎可能同时捕获测试设备。

@@ -7,8 +7,8 @@ Python、PyGObject 或 `busctl`。GNOME Shell 扩展保留 JavaScript，因为�
 ## 构建与运行
 
 ```bash
-cargo build --locked                       # target/debug/mackey
-cargo build --locked --release                     # target/release/mackey
+cargo build --locked --bin mackey          # target/debug/mackey
+cargo build --locked --release --bin mackey # target/release/mackey
 ./target/release/mackey --help
 cargo run --quiet -- 检查
 dbus-run-session -- cargo run --quiet -- 扩展测试
@@ -34,7 +34,7 @@ cargo run --quiet -- 打包         # builddir/发行/ 中的二进制包与依�
 - 默认生成的行为文档写到 XDG 数据目录；`cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"` 显式写仓库文档。
 - `探测` 及 `生成 --报告` 只输出报告。普通探测失败会拒绝生成；离线使用 `--不探测`。
 
-GNOME 键位迁移先保存原始值再写 GSettings；还原失败时保留备份，`卸载 --清除配置` 不删除配置。
+GNOME 键位迁移先保存原始值再写 GSettings；还原失败时保留备份，默认卸载 不删除配置。
 焦点来源和 socket 未就绪时拒绝启动引擎；启用不执行任何全局 Ctrl/Super 交换。
 
 ## 路径边界
@@ -61,3 +61,12 @@ GNOME 键位迁移先保存原始值再写 GSettings；还原失败时保留备�
 
 参考：[clap](https://docs.rs/clap/latest/clap/)、[reqwest](https://docs.rs/reqwest/latest/reqwest/blocking/struct.ClientBuilder.html)、
 [zip](https://docs.rs/zip/latest/zip/read/struct.ZipArchive.html)、[Linux uinput](https://www.kernel.org/doc/html/latest/input/uinput.html)。
+
+安装和卸载共用原生命令：`./安装.sh` 等价于 `mackey 安装`，`./卸载.sh` 等价于 `mackey 卸载`。
+卸载默认清理配置，可传 `--保留配置`；安装统一补齐缺失字段并备份损坏配置。
+X11 不受支持，但程序不作会话类型检测或拦截。
+
+隔离安装/卸载测试和命令桩、扩展测试夹具、虚拟键盘进程编排及发行包验证均由 Rust 执行。
+发布附件通过 `cargo run --quiet --locked -- 发布附件` 生成；需先放齐两个架构的发行包。
+源码快照仍调用标准 `git archive`，gzip、tar、扩展 ZIP 与 SHA-256 清单使用 Rust 库。
+Bash 只保留三个启动壳，GNOME 扩展与真实 GJS 契约保留 JavaScript。

@@ -13,12 +13,16 @@ pub mod 服务;
 pub mod 焦点桥;
 #[path = "用户配置.rs"]
 pub mod 用户配置;
+#[path = "端到端.rs"]
+pub mod 端到端;
 #[path = "路径.rs"]
 pub mod 路径;
 #[path = "配置生成.rs"]
 pub mod 配置生成;
 #[path = "键盘识别.rs"]
 pub mod 键盘识别;
+#[path = "验证.rs"]
+pub mod 验证;
 
 pub const 扩展标识: &str = "mackey-focus@kotonex";
 pub const 旧扩展标识: &str = "xremap-compat@mackey.local";

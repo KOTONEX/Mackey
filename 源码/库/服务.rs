@@ -48,24 +48,17 @@ pub fn 确认(message: &str, 确认执行: bool) -> Result<bool> {
     io::stdin().read_line(&mut answer)?;
     Ok(answer.trim().eq_ignore_ascii_case("y"))
 }
-pub fn 检查会话(require_gnome: bool) -> Result<()> {
+pub fn 检查桌面() -> Result<()> {
+    let desktop = env::var("XDG_CURRENT_DESKTOP")
+        .or_else(|_| env::var("DESKTOP_SESSION"))
+        .unwrap_or_default();
     ensure!(
-        env::var("XDG_SESSION_TYPE").as_deref() != Ok("x11"),
-        "X11 会话不受支持：Mackey 仅支持 GNOME Wayland"
+        desktop.to_lowercase().contains("gnome"),
+        "Mackey 仅支持 GNOME（当前桌面：{desktop}）"
     );
-    if require_gnome {
-        let desktop = env::var("XDG_CURRENT_DESKTOP")
-            .or_else(|_| env::var("DESKTOP_SESSION"))
-            .unwrap_or_default();
-        ensure!(
-            desktop.to_lowercase().contains("gnome"),
-            "Mackey 仅支持 GNOME Wayland（当前桌面：{desktop}）"
-        );
-    }
     Ok(())
 }
 pub fn 初始化(路径: &路径集合) -> Result<()> {
-    检查会话(false)?;
     路径.校验安装路径()?;
     let path = 路径.配置.join("config.json");
     let mut user = if path.exists() {
@@ -224,12 +217,9 @@ fn 入口属于本项目(路径: &路径集合) -> bool {
         .is_ok_and(|内容| 内容.contains(根.join("命令/mackey").to_str().unwrap_or("\0")))
 }
 pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Result<()> {
-    检查会话(false)?;
+    检查桌面()?;
     路径.校验安装路径()?;
-    if !路径.配置.join("config.json").exists() {
-        初始化(路径)?;
-    }
-    crate::用户配置::读取(&路径.配置.join("config.json"))?;
+    初始化(路径)?;
     if !不下载
         && let Err(err) = crate::引擎下载::执行(
             路径,
@@ -296,7 +286,9 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
         }
     }
     std::os::unix::fs::symlink(&binary, &路径.命令入口)?;
-    println!("✓ 已安装 Rust 二进制、扩展与用户服务\n重新登录后运行 mackey 体检 && mackey 应用");
+    println!(
+        "✓ 已安装 Rust 二进制、扩展与用户服务\n重新登录以加载 GNOME 扩展及 input 组权限，再运行 mackey 体检 && mackey 应用\n若尚未加入 input 组，请在本机手动运行 sudo usermod -aG input <用户名>，然后重新登录\n彻底卸载：mackey 卸载"
+    );
     Ok(())
 }
 pub fn 还原(路径: &路径集合) -> Result<()> {
@@ -327,7 +319,6 @@ pub fn 还原(路径: &路径集合) -> Result<()> {
     Ok(())
 }
 pub fn 应用(路径: &路径集合, 确认执行: bool) -> Result<()> {
-    检查会话(false)?;
     let generated = 配置生成::执行(
         路径,
         &配置生成::选项 {
@@ -383,7 +374,6 @@ fn 具有输入组() -> bool {
     })
 }
 pub fn 启用(路径: &路径集合) -> Result<()> {
-    检查会话(false)?;
     let _ = 执行命令("gnome-extensions", &["enable", 扩展标识]);
     if let Err(err) = crate::焦点桥::验证焦点("自动") {
         let _ = 停用();
@@ -425,10 +415,7 @@ pub fn 启用(路径: &路径集合) -> Result<()> {
     Ok(())
 }
 pub fn 状态(路径: &路径集合) {
-    println!(
-        "── Mackey 状态 ──\n会话：{}",
-        env::var("XDG_SESSION_TYPE").unwrap_or("未知".into())
-    );
+    println!("── Mackey 状态 ──");
     println!(
         "引擎：{}",
         查找引擎(路径)
@@ -452,7 +439,7 @@ pub fn 状态(路径: &路径集合) {
 pub fn 体检(路径: &路径集合) -> Result<()> {
     状态(路径);
     let mut problems = Vec::new();
-    if 检查会话(true).is_err() {
+    if 检查桌面().is_err() {
         problems.push("当前会话不是 GNOME Wayland".to_owned());
     }
     if !具有输入组() {
