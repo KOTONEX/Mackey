@@ -4,7 +4,7 @@
 # 隔离带验证「一键卸载是否清理干净」：
 #   - 把 HOME 指到 $HOME 下的临时沙箱（guard_home_path 仍满足），XDG_* 也随之落在沙箱里；
 #   - 用桩 systemctl / gsettings 替代真实服务与 dconf，绝不动当前会话；
-#   - 先造出卸载目标文件，再跑 `uninstall --清除配置 --确认执行`，断言全部消失；
+#   - 先造出卸载目标文件，再跑 `卸载 --清除配置 --确认执行`，断言全部消失；
 #   - gsettings 桩会把完整 argv 记进日志：dry-run 不得 set，
 #     真卸载须从 enabled-extensions 摘掉 UUID、并按备份还原每个键位。
 set -uo pipefail
@@ -127,7 +127,7 @@ else
     ok "--预演 没有触发任何 gsettings set"
 fi
 
-echo "==> 2/4 uninstall --清除配置 --确认执行 清理干净"
+echo "==> 2/4 卸载 --清除配置 --确认执行 清理干净"
 if run_mac_keys 卸载 --清除配置 --确认执行 > "$SANDBOX/uninstall.log" 2>&1; then
     ok "卸载退出码为 0"
 else

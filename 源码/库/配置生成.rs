@@ -361,12 +361,12 @@ pub fn 校验(c: &行为清单) -> Result<()> {
         };
         ensure!(
             e.归属 == expected,
-            "{}：basis 与 policy/targets 不一致（应为 {expected}）",
+            "{}：归属与策略/目标组合 不一致（应为 {expected}）",
             e.标识
         );
         ensure!(
             e.迁移引用.is_empty() || ids.contains(&e.迁移引用),
-            "{}：relocate 引用不存在",
+            "{}：迁移引用不存在",
             e.标识
         );
     }
@@ -393,7 +393,7 @@ pub fn 校验(c: &行为清单) -> Result<()> {
 pub fn 生成迁移计划(c: &行为清单, 绑定表: &键位表) -> Result<Vec<键位迁移>> {
     let mut 迁移计划 = Vec::new();
     for r in &c.迁移规则 {
-        let key = r["键名"].as_str().context("迁移缺少 key")?;
+        let key = r["键名"].as_str().context("迁移缺少键名")?;
         let keys: Vec<String> = if let Some((head, tail)) = key.split_once("..") {
             let prefix = head.trim_end_matches(|c: char| c.is_ascii_digit());
             let start: u32 = head[prefix.len()..].parse()?;
@@ -407,10 +407,10 @@ pub fn 生成迁移计划(c: &行为清单, 绑定表: &键位表) -> Result<Vec
         let to = 字符串列表(&r["新组合"]);
         ensure!(
             from.len() == to.len() && !from.is_empty(),
-            "迁移定义 {}：from/to 数量不一致",
+            "迁移定义 {}：原组合/新组合数量不一致",
             r["标识"]
         );
-        let schema = r["模式"].as_str().context("迁移缺少 schema")?;
+        let schema = r["模式"].as_str().context("迁移缺少模式")?;
         for key in keys {
             let Some(raw) = 绑定表.get(&format!("{schema} {key}")) else {
                 continue;
@@ -573,7 +573,7 @@ pub fn 截图目标(
     }
     result
 }
-fn 组装映射(条目: &[行为条目], profile: &str, swallow: &str) -> Value {
+fn 组装映射(条目: &[行为条目], profile: &str) -> Value {
     let mut map = serde_json::Map::new();
     for e in 条目 {
         let Some(target) = e.目标组合.get(profile).or_else(|| e.目标组合.get("通用"))
@@ -590,7 +590,6 @@ fn 组装映射(条目: &[行为条目], profile: &str, swallow: &str) -> Value 
             map.insert(规范组合(&e.触发键), json!(combos));
         }
     }
-    let _ = swallow;
     Value::Object(map)
 }
 pub struct 生成结果 {
@@ -714,7 +713,7 @@ pub fn 编译配置(c: &行为清单, user: &Value, p: &探测结果) -> Result<
     push(
         "terminal：终端里 Ctrl+C/Z/D 是信号与 EOF，必须单独一套",
         Some(json!({"only":term_match})),
-        组装映射(&terminal, "终端", swallow),
+        组装映射(&terminal, "终端"),
     );
     if c.吞终端组合["启用"] == true && !字符串列表(&c.吞终端组合["触发组合"]).is_empty()
     {
@@ -727,18 +726,18 @@ pub fn 编译配置(c: &行为清单, user: &Value, p: &探测结果) -> Result<
     push(
         "files：文件管理器语义不同（⌘⌫=废纸篓、⌘I=属性）",
         Some(json!({"only":c.应用档["文件管理器"]["匹配"]})),
-        组装映射(&files, "文件管理器", swallow),
+        组装映射(&files, "文件管理器"),
     );
     push(
         "generic：其余应用的兜底（只含显式条目）",
         None,
-        组装映射(&explicit, "通用", swallow),
+        组装映射(&explicit, "通用"),
     );
     if !generated.is_empty() {
         push(
             "generic-sweep：泛化兜底（终端不参与）",
             Some(json!({"not":term_match})),
-            组装映射(&generated, "通用", swallow),
+            组装映射(&generated, "通用"),
         );
     }
     if c.吞控制组合["启用"] == true && !字符串列表(&c.吞控制组合["触发组合"]).is_empty()

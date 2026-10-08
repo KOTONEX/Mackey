@@ -11,7 +11,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="${MACKEY_ENGINE:-}"
 if [[ -z "$ENGINE" || ! -x "$ENGINE" ]]; then
-    printf '%s\n' '找不到可执行的 xremap 引擎；先 make fetch-engine 或设置 MACKEY_ENGINE=...' >&2
+    printf '%s\n' '找不到可执行的 xremap 引擎；先 mackey 获取引擎 或设置 MACKEY_ENGINE=...' >&2
     exit 1
 fi
 # 这个用例需要精确构造焦点类名（kitty/code/some-app），只能走内置静态来源。
@@ -24,8 +24,10 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
 
 PIDS=()
+PROCESS_GROUPS=()
 cleanup() {
-    for pid in "${PIDS[@]}"; do kill "$pid" 2>/dev/null; done
+    for pid in "${PROCESS_GROUPS[@]}"; do kill -- "-$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; done
+    for pid in "${PIDS[@]}"; do kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; done
     rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -59,15 +61,15 @@ run_case() {
     PIDS+=($!)
     sleep 1.2
 
-    sg input -c "'$ROOT/target/debug/examples/虚拟键盘' --名称 '$device' \
+    setsid sg input -c "'$ROOT/target/debug/examples/虚拟键盘' --名称 '$device' \
         --事件 'LEFTMETA:1,C:1,C:0,LEFTMETA:0,LEFTMETA:1,L:1,L:0,LEFTMETA:0,LEFTMETA:1,B:1,B:0,LEFTMETA:0,LEFTCTRL:1,C:1,C:0,LEFTCTRL:0' \
         --等待文件 '$go' --存活秒数 3" > "$WORK/kbd-$name.log" 2>&1 &
-    PIDS+=($!)
+    PROCESS_GROUPS+=($!)
     sleep 1.2
 
-    sg input -c "GNOME_SOCKET='$sock' timeout 15 '$ENGINE' --device '$device' '$WORK/keymap.json'" \
+    setsid sg input -c "GNOME_SOCKET='$sock' timeout 15 '$ENGINE' --device '$device' '$WORK/keymap.json'" \
         > "$WORK/xremap-$name.log" 2>&1 &
-    PIDS+=($!)
+    PROCESS_GROUPS+=($!)
     sleep 2.5
     touch "$go"
     sleep 3

@@ -30,7 +30,7 @@ Cargo.toml / Cargo.lock            Rust 应用与依赖锁文件
 1. 持久文件不写 `$HOME` 之外；不调用 `sudo`；拒绝以 root 运行。
    新的写入点必须走 `源码/库/路径.rs` 的 `保护主目录路径`。
 2. 不做 Ctrl/⌘ 全局交换；只接管 `配置/行为清单.json` 列出的键
-   （`吞控制键` 是清单内的点状替换，实现为独立 keymap + `application.not`，
+   （`吞控制组合` 是清单内的点状替换，实现为独立 keymap + `application.not`，
    例外必须包含终端配置档与 `例外应用`，否则会毁掉 SIGINT 与内嵌终端）；
    与 GNOME 冲突时迁移功能（改 dconf 前备份、卸载还原），而不是删除功能。
 

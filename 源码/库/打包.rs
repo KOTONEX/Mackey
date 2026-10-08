@@ -32,7 +32,6 @@ fn 复制许可(源: &Path, 目标: &Path, 深度: usize) -> Result<usize> {
 pub fn 执行() -> Result<std::path::PathBuf> {
     let 根 = 仓库()?;
     let 路径 = 路径集合::发现()?;
-    运行(&根, "cargo", &["build", "--locked", "--release"])?;
     let 日志 = crate::变更日志::生成(false)?;
     let 发布说明 = crate::变更日志::生成(true)?;
     let 临时 = tempfile::Builder::new()
@@ -46,7 +45,6 @@ pub fn 执行() -> Result<std::path::PathBuf> {
     for 文件 in ["LICENSE", "README.md"] {
         fs::copy(根.join(文件), 包目录.join(文件))?;
     }
-    fs::copy(根.join("target/release/mackey"), 包目录.join("mackey"))?;
     fs::copy(日志, 包目录.join("CHANGELOG.md"))?;
     fs::copy(发布说明, 包目录.join("发布说明.md"))?;
     let 信息 = Command::new("rustc").arg("-vV").output()?;
@@ -56,6 +54,11 @@ pub fn 执行() -> Result<std::path::PathBuf> {
         .lines()
         .find_map(|行| 行.strip_prefix("host: "))
         .context("rustc 没有 host 信息")?;
+    运行(
+        &根,
+        "cargo",
+        &["build", "--locked", "--release", "--target", 宿主],
+    )?;
     let 元信息 = Command::new("cargo")
         .args([
             "metadata",
@@ -69,6 +72,15 @@ pub fn 执行() -> Result<std::path::PathBuf> {
         .output()?;
     ensure!(元信息.status.success(), "cargo metadata 失败");
     let 元信息: Value = serde_json::from_slice(&元信息.stdout)?;
+    let 构建目录 = Path::new(
+        元信息["target_directory"]
+            .as_str()
+            .context("缺少构建目录")?,
+    );
+    fs::copy(
+        构建目录.join(宿主).join("release/mackey"),
+        包目录.join("mackey"),
+    )?;
     let 节点: BTreeSet<_> = 元信息["resolve"]["nodes"]
         .as_array()
         .context("缺少依赖图")?
@@ -120,6 +132,14 @@ pub fn 执行() -> Result<std::path::PathBuf> {
     ensure!(状态.success(), "tar 打包失败");
     let 产物 = 根.join("builddir/发行").join(format!("{名称}.tar.gz"));
     原子写入(&路径, &产物, &fs::read(临时包)?, 0o644)?;
+    运行(
+        &根,
+        "bash",
+        &[
+            "测试/发行包.sh",
+            产物.to_str().context("发行包路径不是 UTF-8")?,
+        ],
+    )?;
     println!("✓ {}", 产物.display());
     Ok(产物)
 }
