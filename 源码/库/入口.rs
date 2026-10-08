@@ -28,3 +28,12 @@ pub const 扩展标识: &str = "mackey-focus@kotonex";
 pub const 旧扩展标识: &str = "xremap-compat@mackey.local";
 pub const 嵌入清单: &str = include_str!("../../配置/行为清单.json");
 pub const 版本: &str = env!("CARGO_PKG_VERSION");
+
+/// TypeScript 构建产物；运行、安装和发布共用同一份字节。
+pub const 扩展脚本: &[u8] = include_bytes!(concat!(
+    env!("OUT_DIR"),
+    "/类型脚本/扩展/mackey-focus@kotonex/扩展.js"
+));
+pub const 扩展契约脚本: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/类型脚本/测试/扩展契约.js"));
+pub const 基类桩脚本: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/类型脚本/测试/基类桩.js"));

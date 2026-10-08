@@ -31,7 +31,7 @@ pub fn 格式化() -> Result<()> {
 pub fn 类型检查() -> Result<()> {
     let 根 = 仓库()?;
     运行(&根, "cargo", &["check", "--locked", "--all-targets"])?;
-    运行(&根, "tsc", &["-p", "tsconfig.json"])
+    运行(&根, "tsc", &["-p", "tsconfig.json", "--noEmit"])
 }
 pub fn 校验() -> Result<()> {
     let 根 = 仓库()?;

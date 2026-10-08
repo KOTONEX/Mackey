@@ -14,8 +14,8 @@
 // 本扩展用**同一份 D-Bus 契约**重新实现它，因此无需给 xremap 打补丁。
 // 安全边界：仅读取焦点窗口元数据；不抓键、不注入按键、不写任何文件。
 
-// @ts-check
 import Gio from 'gi://Gio';
+import type { DBusExportedObject } from 'gi://Gio';
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -37,19 +37,17 @@ const 接口定义 = `
 
 /**
  * 焦点窗口的「应用标识」：Wayland 原生应用是 app-id，XWayland 是 WM_CLASS。
- * @param {窗口接口 | null} win
- * @returns {string}
  */
-function 窗口应用标识(win) {
-    if (!win)
+function 窗口应用标识(窗口: 窗口接口 | null): string {
+    if (!窗口)
         return '';
-    const candidates = [
-        () => win.get_wm_class(),
-        () => win.get_gtk_application_id(),
-        () => win.get_sandboxed_app_id(),
-        () => win.get_wm_class_instance(),
+    const 候选列表 = [
+        () => 窗口.get_wm_class(),
+        () => 窗口.get_gtk_application_id(),
+        () => 窗口.get_sandboxed_app_id(),
+        () => 窗口.get_wm_class_instance(),
     ];
-    for (const get of candidates) {
+    for (const get of 候选列表) {
         try {
             const value = get();
             if (value)
@@ -62,38 +60,39 @@ function 窗口应用标识(win) {
 }
 
 const 焦点桥 = class {
-    ActiveWindow() {
-        const win = global.display.focus_window;
+    ActiveWindow(): string {
+        const 窗口 = global.display.focus_window;
         return JSON.stringify({
-            wm_class: 窗口应用标识(win),
-            title: win?.get_title?.() ?? '',
+            wm_class: 窗口应用标识(窗口),
+            title: 窗口?.get_title?.() ?? '',
         });
     }
 
-    WMClass() {
+    WMClass(): string {
         return 窗口应用标识(global.display.focus_window);
     }
 
     // 便于排查：列出所有窗口的 app-id
-    WMClasses() {
+    WMClasses(): string {
         const list = global.get_window_actors()
-            .map(actor => actor.meta_window)
-            .filter(win => win && !win.is_skip_taskbar())
-            .map(win => 窗口应用标识(win))
+            .map(演员 => 演员.meta_window)
+            .filter((窗口): 窗口 is 窗口接口 => 窗口 != null && !窗口.is_skip_taskbar())
+            .map(窗口 => 窗口应用标识(窗口))
             .filter(id => id);
         return JSON.stringify([...new Set(list)].sort());
     }
 };
 
 export default class 焦点扩展 extends Extension {
-    enable() {
+    private _导出对象: DBusExportedObject | null = null;
+    enable(): void {
         this._导出对象 = Gio.DBusExportedObject.wrapJSObject(接口定义, new 焦点桥());
         // 注意：在 gnome-shell 进程内导出，因此挂在 org.gnome.Shell 这个总线名下，
         // 与 xremap 期望的调用方式完全一致。
         this._导出对象.export(Gio.DBus.session, 对象路径);
     }
 
-    disable() {
+    disable(): void {
         this._导出对象?.unexport();
         this._导出对象 = null;
     }

@@ -17,7 +17,7 @@ Cargo.toml / Cargo.lock            Rust 应用与依赖锁文件
 源码/库/{服务,路径,键盘识别}.rs    服务、HOME/XDG 边界、键盘识别
 命令/mackey                        源码树 Shell 入口（无运行时逻辑）
 配置/行为清单.json             行为唯一事实源（编译时嵌入）
-扩展/mackey-focus@kotonex/    GNOME 扩展（JavaScript，编译时嵌入）
+扩展/mackey-focus@kotonex/    GNOME 扩展（TypeScript，编译生成 JS 后嵌入）
 测试/虚拟键盘.rs          Rust uinput 虚拟键盘（测试专用）
 测试/命令行.rs                     二进制/socket 集成测试
 测试/基准/                   Python 旧版输出的差分基准
@@ -108,3 +108,10 @@ cargo run --quiet -- 全部测试         # Rust + 隔离安装/卸载 + 扩展�
 
 - 安装脚本仅作原生命令启动壳；安装/卸载选项和预检由 Rust 统一实现。卸载默认清配置，`--保留配置` 显式保留。
 - X11 不支持范围仅在文档说明；不得新增 X11 会话检测、拦截或运行时警告。GNOME 桌面预检保留。
+
+## TypeScript 构建
+
+- 所有自有 GJS 代码以 `.ts` 维护，包括扩展、契约测试和基类桩；不得提交手写或生成的 JS 副本。
+- Cargo 的 `源码/构建.rs` 调用严格模式 `tsc`，产物位于 HOME 下的 Cargo OUT_DIR；构建需要 Node.js 与 TypeScript。
+- 安装的 `extension.js`、真实 GJS 测试和扩展 ZIP 必须使用同一次编译嵌入的产物。ZIP 仅含 `extension.js` 和 `metadata.json`。
+- 缺少编译器或类型错误必须中止构建，不得回退到旧产物；运行发行二进制不依赖 tsc。

@@ -242,12 +242,7 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
     }
     let ext = 路径.扩展路径(扩展标识);
     移除文件(路径, &ext)?;
-    原子写入(
-        路径,
-        &ext.join("extension.js"),
-        include_bytes!("../../扩展/mackey-focus@kotonex/extension.js"),
-        0o644,
-    )?;
+    原子写入(路径, &ext.join("extension.js"), crate::扩展脚本, 0o644)?;
     原子写入(
         路径,
         &ext.join("metadata.json"),

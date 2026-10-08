@@ -50,7 +50,7 @@ Mackey 按焦点应用分三套映射：
 
 从 Python 版更新时，请先运行该版本的卸载脚本，再安装新版；不兼容旧配置接口。详见 [重新安装说明](文档/07-中文接口迁移.md)。
 
-源码安装先执行 `cargo build --locked --release --bin mackey`（需要 Rust/Cargo 与 C 编译器）；发布二进制本身不需要 Rust、Python 或仓库。
+源码安装先执行 `cargo build --locked --release --bin mackey`（需要 Rust/Cargo、C 编译器、Node.js 与 TypeScript（`tsc`））；发布二进制本身不需要 Rust、Python 或仓库。
 
 ```bash
 ./安装.sh          # 可选：--不下载 跳过下载、--保持运行 保留旧服务、--确认执行 免确认
@@ -162,7 +162,7 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 | --- | --- |
 | 桌面 | GNOME（Wayland）；不支持 X11 会话与更旧版本 GNOME（GNOME 50 已移除 X11，扩展 API 变动频繁） |
 | 引擎 | xremap ≥ 0.15；`安装.sh` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `gnome` 特性的发布版本 |
-| 构建 | Rust 稳定版、Cargo、C 编译器；`cargo build --locked --release --bin mackey` 构建独立二进制 |
+| 构建 | Rust 稳定版、Cargo、C 编译器、Node.js 与 TypeScript（`tsc`）；`cargo build --locked --release --bin mackey` 构建独立二进制 |
 | 运行 | GSettings、systemd 用户会话、GNOME 扩展；不依赖 Python 或源码目录 |
 | 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |
 
@@ -200,9 +200,10 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 （给自动化代理的项目说明）。提交前请跑 `cargo run --quiet -- 检查`。
 
 Rust 主程序由 `cargo check`、`rustfmt` 和 `clippy` 检查；
-GNOME 扩展与契约测试不引入打包链，直接在 GJS 源码上启用 `// @ts-check`，
-配手写的 `类型声明/GJS环境.d.ts` 描述最小 GJS 类型面，交给严格模式的 `tsc --noEmit` 检查。
-两者统一由 `cargo run --quiet -- 类型检查` 驱动，缺少 tsc 会明确失败。
+GNOME 扩展、契约测试与基类桩均以 TypeScript 编写，手写的 `类型声明/GJS环境.d.ts` 描述最小 GJS 类型面。
+`源码/构建.rs` 自动运行严格模式的 `tsc`，将生成的 JavaScript 嵌入二进制；安装、测试和发布 ZIP 共用这份产物。
+两者统一由 `cargo run --quiet -- 类型检查` 驱动，缺少 tsc 或类型错误会明确失败。
+源码树不维护 JS 副本；已发布的二进制不需要 Node.js、tsc 或源码目录。
 实现与部署说明见 [文档/05-Rust实现.md](文档/05-Rust实现.md)。
 
 ## 许可证

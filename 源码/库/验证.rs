@@ -23,7 +23,7 @@ pub fn 扩展(根: &Path) -> Result<()> {
     let 临时 = tempfile::Builder::new()
         .prefix(".mackey-扩展-")
         .tempdir_in(&路径.主目录)?;
-    let 原文 = fs::read_to_string(根.join("扩展").join(crate::扩展标识).join("extension.js"))?;
+    let 原文 = std::str::from_utf8(crate::扩展脚本)?;
     let 导入 = "resource:///org/gnome/shell/extensions/extension.js";
     ensure!(
         原文.matches(导入).count() == 1,
@@ -44,13 +44,15 @@ pub fn 扩展(根: &Path) -> Result<()> {
     原子写入(
         &路径,
         &临时.path().join("shell-stub.js"),
-        b"export class Extension { constructor(metadata) { this.metadata = metadata; } }\n",
+        crate::基类桩脚本,
         0o644,
     )?;
+    let 契约 = 临时.path().join("扩展契约.js");
+    原子写入(&路径, &契约, crate::扩展契约脚本, 0o644)?;
     let 程序 = 构建目录(根)?.join("debug/mackey");
     let 状态 = Command::new("dbus-run-session")
         .args(["--", "gjs", "-m"])
-        .arg(根.join("测试/扩展契约.mjs"))
+        .arg(契约)
         .arg(&文件)
         .arg(程序)
         .env("GIO_USE_VFS", "local")

@@ -159,6 +159,26 @@ fn 所有安装入口预检失败时零写入() {
 fn 单次原生安装收敛缺失字段和陈旧产物() {
     let 沙箱 = 沙箱::新建();
     沙箱.安装();
+    let 扩展目录 = 沙箱.路径(&format!(
+        ".local/share/gnome-shell/extensions/{}",
+        mackey::扩展标识
+    ));
+    assert_eq!(
+        fs::read(扩展目录.join("extension.js")).unwrap(),
+        mackey::扩展脚本
+    );
+    let mut 文件: Vec<_> = fs::read_dir(&扩展目录)
+        .unwrap()
+        .map(|项| 项.unwrap().file_name())
+        .collect();
+    文件.sort();
+    assert_eq!(
+        文件,
+        vec![
+            std::ffi::OsString::from("extension.js"),
+            std::ffi::OsString::from("metadata.json")
+        ]
+    );
     let 基准 = 快照(&沙箱.主目录);
     let 配置路径 = 沙箱.路径(".config/mackey/config.json");
     let mut 配置: Value = serde_json::from_slice(&fs::read(&配置路径).unwrap()).unwrap();

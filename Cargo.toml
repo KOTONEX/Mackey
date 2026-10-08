@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 [package]
 name = "mackey"
-version = "2.1.0"
+version = "2.2.0"
 edition = "2024"
 publish = false
 license = "AGPL-3.0-or-later"
 description = "GNOME Wayland 上的 macOS 键位模拟"
 default-run = "mackey"
+build = "源码/构建.rs"
 
 [dependencies]
 anyhow = "1"

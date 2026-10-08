@@ -77,6 +77,7 @@ jobs:
           mkdir -p "$HOME/mackey-release/builddir/发行"
           rustup toolchain install stable --profile minimal
           rustup default stable
+          npm install -g typescript
       - uses: actions/download-artifact@v8
         with:
           pattern: mackey-linux-*

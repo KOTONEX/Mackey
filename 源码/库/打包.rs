@@ -174,32 +174,19 @@ fn 组装附件(根: &Path) -> Result<()> {
     原子写入(&路径, &源码, &编码器.finish()?, 0o644)?;
     附件.push(源码);
     let mut 归档 = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
-    let 扩展目录 = 根.join("扩展").join(crate::扩展标识);
-    fn 添加(
-        归档: &mut zip::ZipWriter<std::io::Cursor<Vec<u8>>>,
-        根: &Path,
-        目录: &Path,
-    ) -> Result<()> {
-        use std::io::Write;
-        let mut 条目: Vec<_> = fs::read_dir(目录)?.collect::<std::io::Result<_>>()?;
-        条目.sort_by_key(|项| 项.file_name());
-        for 项 in 条目 {
-            let 源 = 项.path();
-            let 类型 = 项.file_type()?;
-            if 类型.is_dir() {
-                添加(归档, 根, &源)?;
-            } else {
-                ensure!(类型.is_file(), "扩展不能包含软链或设备文件");
-                归档.start_file(
-                    源.strip_prefix(根)?.to_string_lossy(),
-                    zip::write::SimpleFileOptions::default().unix_permissions(0o644),
-                )?;
-                归档.write_all(&fs::read(源)?)?;
-            }
-        }
-        Ok(())
+    for (名称, 内容) in [
+        ("extension.js", crate::扩展脚本),
+        (
+            "metadata.json",
+            include_bytes!("../../扩展/mackey-focus@kotonex/metadata.json").as_slice(),
+        ),
+    ] {
+        归档.start_file(
+            名称,
+            zip::write::SimpleFileOptions::default().unix_permissions(0o644),
+        )?;
+        归档.write_all(内容)?;
     }
-    添加(&mut 归档, &扩展目录, &扩展目录)?;
     let 扩展包 = 目录.join(format!("mackey-gnome-extension-{}.zip", crate::版本));
     原子写入(&路径, &扩展包, &归档.finish()?.into_inner(), 0o644)?;
     附件.push(扩展包);
@@ -246,7 +233,7 @@ mod 测试 {
         fs::write(根.join("README.md"), "源码探针").unwrap();
         let 扩展 = 根.join("扩展").join(crate::扩展标识);
         fs::create_dir_all(&扩展).unwrap();
-        fs::write(扩展.join("extension.js"), "export default class 测试 {}").unwrap();
+        fs::write(扩展.join("扩展.ts"), "// TypeScript 源码占位").unwrap();
         fs::write(
             扩展.join("metadata.json"),
             "{\"uuid\":\"mackey-focus@kotonex\"}",
@@ -325,7 +312,7 @@ mod 测试 {
             .unwrap()
             .read_to_string(&mut 文本)
             .unwrap();
-        assert_eq!(文本, "export default class 测试 {}");
+        assert_eq!(文本.as_bytes(), crate::扩展脚本);
         let mut 源码 = tar::Archive::new(flate2::read::GzDecoder::new(
             fs::File::open(发行.join(format!("mackey-{}-source.tar.gz", crate::版本))).unwrap(),
         ));

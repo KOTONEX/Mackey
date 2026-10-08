@@ -24,7 +24,7 @@
 | 依赖 | 用途 |
 |---|---|
 | Rust 稳定版 / Cargo / C 编译器 | 编译主程序、原生焦点桥、虚拟键盘测试 |
-| TypeScript（`tsc`）、ShellCheck | 扩展严格类型与 Shell 静态检查 |
+| Node.js、TypeScript（`tsc`）、ShellCheck | 扩展/契约/基类桩编译、严格类型与 Shell 静态检查 |
 | `jq` | 生成器报告解析、迁移计划 |
 | `gjs` | 扩展契约自测 |
 | `gsettings` / `dbus-run-session` | 探测 GNOME 键位、D-Bus |
@@ -41,7 +41,7 @@ cargo install xremap --features gnome
 ## 常用命令
 
 ```bash
-cargo run --quiet -- 检查             # cargo fmt / clippy / Shell / JSON / JS 类型检查
+cargo run --quiet -- 检查             # cargo fmt / clippy / Shell / JSON / TypeScript 类型检查
 cargo run --quiet -- 类型检查        # cargo check --all-targets + tsc 检查扩展与契约测试
 cargo run --quiet -- 校验            # 离线跑生成器，校验键名与配置组装
 cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"         # 依据本机 dconf 重新生成配置与行为清单
@@ -96,7 +96,7 @@ cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"
   当前焦点窗口；跑之前先让不敏感的窗口抢焦点，并手动停止已有全局引擎。
   测试以独立进程组和 RAII 回收子进程，等待设备、套接字与动作探针就绪。
 - 原生扩展夹具只把 `resource:///org/gnome/shell/extensions/extension.js` 一行替换成桩，
-  其余代码原样加载，保证测的是真实源码。
+  其余编译产物原样加载，保证测的是真实扩展。
 
 ## 许可证
 
@@ -116,3 +116,10 @@ cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"
 正式发行版只发布已提交到 `main` 的代码；其他分支或标签发布时必须标记为预发行，且不得标记 Latest。
 标签工作流检查提交是否属于远程 `main` 历史，不凭版本号推断正式状态。
 接口变更不添加旧别名或配置转换层；引导用户先运行旧版卸载脚本，再安装新版。
+
+## TypeScript 资源
+
+扩展源为 `扩展/mackey-focus@kotonex/扩展.ts`，契约与基类桩分别为 `测试/扩展契约.ts`、`测试/基类桩.ts`。
+Cargo 构建自动编译并嵌入这些资源，类型错误或缺少 `tsc` 会停止构建。
+`tsc -p tsconfig.json --noEmit` 只检查类型；单独运行 `tsc -p tsconfig.json` 的输出位于被忽略的 `builddir/类型脚本/`。
+GNOME 安装与 ZIP 使用生成的标准 `extension.js`；源码树不维护 JS 副本。

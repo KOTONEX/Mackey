@@ -1,7 +1,7 @@
 # Rust 实现与部署
 
 主程序、生成器、焦点桥、键盘识别和引擎下载器由 `mackey` Rust 二进制实现，运行无需
-Python、PyGObject 或 `busctl`。GNOME Shell 扩展保留 JavaScript，因为它在 Shell 的 GJS 环境运行。
+Python、PyGObject 或 `busctl`。GNOME 扩展、契约测试与基类桩以 TypeScript 维护，由 Cargo 调用 `tsc` 生成 GJS 可运行的 JavaScript。
 源码树的 `命令/mackey`、安装与卸载脚本只负责启动和安装编排；自有命令与参数采用中文。
 
 ## 构建与运行
@@ -15,7 +15,7 @@ dbus-run-session -- cargo run --quiet -- 扩展测试
 cargo run --quiet -- 打包         # builddir/发行/ 中的二进制包与依赖许可文本
 ```
 
-只固定 Rust Edition 2024，不固定 Rust 版本号或工具链；构建需要支持该 Edition 的 Rust、Cargo 与 C 编译器。应用提交 `Cargo.lock` 并使用 `--locked`。
+只固定 Rust Edition 2024，不固定 Rust 版本号或工具链；构建需要支持该 Edition 的 Rust、Cargo、C 编译器、Node.js 与 TypeScript（`tsc`）。应用提交 `Cargo.lock` 并使用 `--locked`。
 发布工作流分别在 Ubuntu 24.04 x86_64/aarch64 runner 上原生构建；产物使用系统 glibc，
 不声称是静态链接或兼容所有旧版发行版。
 
@@ -69,4 +69,10 @@ X11 不受支持，但程序不作会话类型检测或拦截。
 隔离安装/卸载测试和命令桩、扩展测试夹具、虚拟键盘进程编排及发行包验证均由 Rust 执行。
 发布附件通过 `cargo run --quiet --locked -- 发布附件` 生成；需先放齐两个架构的发行包。
 源码快照仍调用标准 `git archive`，gzip、tar、扩展 ZIP 与 SHA-256 清单使用 Rust 库。
-Bash 只保留三个启动壳，GNOME 扩展与真实 GJS 契约保留 JavaScript。
+Bash 只保留三个启动壳；GNOME 扩展、真实 GJS 契约和基类桩均以 TypeScript 编写，生成 JS 后嵌入二进制。
+
+## 扩展编译
+
+构建需要 Node.js 与 TypeScript（`tsc`），`源码/构建.rs` 在 HOME 内的 Cargo OUT_DIR 生成资源。
+安装、扩展契约和发布附件引用相同的嵌入字节，安装目录与扩展 ZIP 不包含 TypeScript 源码。
+已发行的二进制和生成的 GNOME 扩展无需 TypeScript 编译器。

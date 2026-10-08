@@ -10,7 +10,7 @@
 |---|---|---|
 | 用户入口 | Bash `bin/mackey`，由脚本编排各工具 | 原生 `mackey`，`命令/mackey` 仅启动已构建程序 |
 | 主要逻辑 | Python 生成器、焦点桥、下载器、键盘识别 + Bash 安装/服务管理 | `源码/库/` 中 12 个功能模块与 1 个库入口，统一配置、服务、下载、焦点、开发与打包逻辑 |
-| GNOME 扩展 | JavaScript，通过 D-Bus 暴露焦点 | 仍为 GNOME 必需的 JavaScript，协议一致 |
+| GNOME 扩展 | JavaScript，通过 D-Bus 暴露焦点 | TypeScript 源码，编译为 GNOME 使用的 JavaScript，协议一致 |
 | 运行环境 | Bash、Python，焦点桥使用 PyGObject/GI 或 busctl | 原生可执行文件与系统 glibc；无需 Python/GI 运行时 |
 | 实际按键映射 | 外部 xremap | 仍由外部 xremap 执行 |
 | 安装产物 | 依赖仓库中的工具/资源 | 可执行文件内嵌清单与扩展，安装后独立运行 |

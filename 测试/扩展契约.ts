@@ -4,7 +4,7 @@
 //
 // 为什么需要它：GNOME 在 Wayland 下不会热扫描扩展目录，而嵌套/headless 的
 // gnome-shell 又会因为抢占 logind 会话（EBUSY）/段错误而跑不起来。
-// 所以这里加载**真实的 extension.js 源码**，只桩化 shell 提供的全局对象
+// 所以这里加载**由 TypeScript 编译生成的真实 extension.js**，只桩化 shell 提供的全局对象
 // （resource:///org/gnome/shell/extensions/extension.js 与 global.display），
 // 然后用真实 D-Bus 往返（自调用）验证：
 //   1. 模块能解析、默认导出的类能实例化；
@@ -13,9 +13,9 @@
 //   4. WMClass 返回纯类名、WMClasses 返回去重列表；
 //   5. disable() 会撤掉导出。
 //
-// 用法：gjs -m 测试/扩展契约.mjs <被改写过的 extension.js 路径>
-// @ts-check
+// 用法：gjs -m <编译输出>/测试/扩展契约.js <被改写过的 extension.js 路径>
 import Gio from 'gi://Gio';
+import type { DBusReply } from 'gi://Gio';
 import GLib from 'gi://GLib';
 import System from 'system';
 
@@ -23,46 +23,35 @@ const 对象路径 = '/com/k0kubun/Xremap';
 const 接口名称 = 'com.k0kubun.Xrmap'.replace('Xrmap', 'Xremap');
 
 let 失败数量 = 0;
-/** @param {unknown} 错误 */
-function 错误说明(错误) {
+function 错误说明(错误: unknown): string {
     return 错误 instanceof Error ? 错误.message : String(错误);
 }
-/**
- * @param {string} name
- * @param {boolean} cond
- * @param {string} [extra]
- */
-function 检查(name, cond, extra = '') {
-    if (cond) {
-        print(`  ✓ ${name}`);
+function 检查(名称: string, 条件: boolean, 补充 = ''): void {
+    if (条件) {
+        print(`  ✓ ${名称}`);
     } else {
         失败数量++;
-        print(`  ✗ ${name} ${extra}`);
+        print(`  ✗ ${名称} ${补充}`);
     }
 }
 
-/**
- * @param {string} busName
- * @param {string} method
- */
-function 调用(busName, method) {
+function 调用(总线名: string, 方法: string): string {
     // 注意：被调用的对象就在本进程里，所以必须用**异步**调用并驱动主循环，
     // 否则同步 call_sync 会把自己阻塞死（进来的方法调用永远没机会被派发）。
-    const loop = GLib.MainLoop.new(null, false);
-    /** @type {{回复: import('gi://Gio').DBusReply | null, 错误: unknown}} */
-    const 结果 = {回复: null, 错误: null};
+    const 主循环 = GLib.MainLoop.new(null, false);
+    const 结果: {回复: DBusReply | null; 错误: unknown} = {回复: null, 错误: null};
     Gio.DBus.session.call(
-        busName, 对象路径, 接口名称, method, null, null,
+        总线名, 对象路径, 接口名称, 方法, null, null,
         Gio.DBusCallFlags.NONE, 2000, null,
-        (source, result) => {
+        (来源, 反馈) => {
             try {
-                结果.回复 = source.call_finish(result);
-            } catch (e) {
-                结果.错误 = e;
+                结果.回复 = 来源.call_finish(反馈);
+            } catch (错误) {
+                结果.错误 = 错误;
             }
-            loop.quit();
+            主循环.quit();
         });
-    loop.run();
+    主循环.run();
     if (结果.错误)
         throw 结果.错误;
     if (!结果.回复)
@@ -74,8 +63,7 @@ function 调用(busName, method) {
 }
 
 // ---- 桩：shell 提供的全局对象 -------------------------------------------------
-/** @type {窗口接口} */
-const 模拟窗口 = {
+const 模拟窗口: 窗口接口 = {
     get_wm_class: () => 'TestTerminal',
     get_gtk_application_id: () => null,
     get_sandboxed_app_id: () => null,
@@ -92,13 +80,14 @@ globalThis.global = {
 // ---- 加载真实扩展源码 ---------------------------------------------------------
 const 目标文件 = ARGV[0];
 if (!目标文件)
-    throw new Error('用法: gjs -m 测试/扩展契约.mjs <extension.js 路径>');
+    throw new Error('用法: gjs -m <编译输出>/测试/扩展契约.js <extension.js 路径>');
 
 print(`加载：${目标文件}`);
-const module = await import(`file://${目标文件}`);
-检查('模块有默认导出', typeof module.default === 'function');
+interface 扩展实例 { enable(): void; disable(): void; }
+const 模块: { default: new(metadata: object) => 扩展实例 } = await import(`file://${目标文件}`);
+检查('模块有默认导出', typeof 模块.default === 'function');
 
-const 实例 = new module.default({});
+const 实例 = new 模块.default({});
 检查('实例可构造', !!实例);
 
 // ---- enable() 与 D-Bus 契约 ---------------------------------------------------
@@ -116,36 +105,42 @@ let 载荷 = "";
 try {
     载荷 = 调用(总线名称, 'ActiveWindow');
     检查('ActiveWindow 可被 D-Bus 调用', true);
-} catch (e) {
-    检查('ActiveWindow 可被 D-Bus 调用', false, `→ ${错误说明(e)}`);
+} catch (错误) {
+    检查('ActiveWindow 可被 D-Bus 调用', false, `→ ${错误说明(错误)}`);
 }
 
-let 解析结果 = null;
+let 解析结果: unknown = null;
 try {
     解析结果 = JSON.parse(载荷);
-} catch (e) {
+} catch (错误) {
     检查('ActiveWindow 返回可解析 JSON', false, `→ ${载荷}`);
 }
-const 是对象 = 解析结果 !== null && typeof 解析结果 === 'object' && !Array.isArray(解析结果);
+function 对象(值: unknown): 值 is Record<string, unknown> {
+    return 值 !== null && typeof 值 === 'object' && !Array.isArray(值);
+}
+const 是对象 = 对象(解析结果);
 检查('ActiveWindow 返回非空 JSON 对象', 是对象, `→ ${载荷}`);
-if (是对象) {
+if (对象(解析结果)) {
     检查('JSON 含 wm_class 字段', 解析结果.wm_class === 'TestTerminal', `→ ${JSON.stringify(解析结果)}`);
     检查('JSON 含 title 字段', 解析结果.title === 'bash — /tmp', `→ ${JSON.stringify(解析结果)}`);
 }
 
 // 独立 Rust 进程调用该对象期间继续派发 GJS 主循环。
+const 桥程序 = ARGV[1];
+if (!桥程序)
+    throw new Error('缺少 Rust 焦点桥程序');
 const 桥进程 = Gio.Subprocess.new(
-    [ARGV[1], '焦点桥', '--后端', 'k0kubun', '--测试'],
+    [桥程序, '焦点桥', '--后端', 'k0kubun', '--测试'],
     Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
 const 桥主循环 = GLib.MainLoop.new(null, false);
-桥进程.communicate_utf8_async(null, null, (child, result) => {
+桥进程.communicate_utf8_async(null, null, (子进程, 反馈) => {
     try {
-        const [, stdout, stderr] = child.communicate_utf8_finish(result);
-        检查('Rust 焦点桥 可调用真实扩展', child.get_successful(), stderr || '');
-        const info = JSON.parse(stdout || 'null');
-        检查('Rust 获得准确焦点', info?.wm_class === 'TestTerminal' && info?.title === 'bash — /tmp');
-    } catch (e) {
-        检查('Rust D-Bus 互通', false, 错误说明(e));
+        const [, 输出, 错误输出] = 子进程.communicate_utf8_finish(反馈);
+        检查('Rust 焦点桥 可调用真实扩展', 子进程.get_successful(), 错误输出 || '');
+        const 焦点: unknown = JSON.parse(输出 || 'null');
+        检查('Rust 获得准确焦点', 对象(焦点) && 焦点.wm_class === 'TestTerminal' && 焦点.title === 'bash — /tmp');
+    } catch (错误) {
+        检查('Rust D-Bus 互通', false, 错误说明(错误));
     }
     桥主循环.quit();
 });
@@ -153,26 +148,26 @@ const 桥主循环 = GLib.MainLoop.new(null, false);
 
 try {
     检查('WMClass 返回纯类名', 调用(总线名称, 'WMClass') === 'TestTerminal');
-} catch (e) {
-    检查('WMClass 返回纯类名', false, `→ ${错误说明(e)}`);
+} catch (错误) {
+    检查('WMClass 返回纯类名', false, `→ ${错误说明(错误)}`);
 }
 
 try {
-    const list = JSON.parse(调用(总线名称, 'WMClasses'));
-    检查('WMClasses 返回去重列表', Array.isArray(list) && list.join() === 'TestTerminal',
-        `→ ${JSON.stringify(list)}`);
-} catch (e) {
-    检查('WMClasses 返回去重列表', false, `→ ${错误说明(e)}`);
+    const 列表: unknown = JSON.parse(调用(总线名称, 'WMClasses'));
+    检查('WMClasses 返回去重列表', Array.isArray(列表) && 列表.join() === 'TestTerminal',
+        `→ ${JSON.stringify(列表)}`);
+} catch (错误) {
+    检查('WMClasses 返回去重列表', false, `→ ${错误说明(错误)}`);
 }
 
 // 焦点窗口缺失时应返回空类名，而不是抛错（xremap 会退到兜底 keymap）
 globalThis.global.display.focus_window = null;
 try {
-    const empty = JSON.parse(调用(总线名称, 'ActiveWindow'));
-    检查('无焦点窗口时返回空 wm_class', empty.wm_class === '' && empty.title === '',
-        `→ ${JSON.stringify(empty)}`);
-} catch (e) {
-    检查('无焦点窗口时返回空 wm_class', false, `→ ${错误说明(e)}`);
+    const 空焦点: unknown = JSON.parse(调用(总线名称, 'ActiveWindow'));
+    检查('无焦点窗口时返回空 wm_class', 对象(空焦点) && 空焦点.wm_class === '' && 空焦点.title === '',
+        `→ ${JSON.stringify(空焦点)}`);
+} catch (错误) {
+    检查('无焦点窗口时返回空 wm_class', false, `→ ${错误说明(错误)}`);
 }
 
 // ---- disable() ---------------------------------------------------------------
@@ -180,9 +175,9 @@ try {
 let 已撤销 = false;
 try {
     调用(总线名称, 'ActiveWindow');
-} catch (e) {
-    已撤销 = 错误说明(e).includes('UnknownMethod') || 错误说明(e).includes('does not exist') ||
-        错误说明(e).includes('No such');
+} catch (错误) {
+    已撤销 = 错误说明(错误).includes('UnknownMethod') || 错误说明(错误).includes('does not exist') ||
+        错误说明(错误).includes('No such');
 }
 检查('disable() 撤掉 D-Bus 导出', 已撤销);
 
