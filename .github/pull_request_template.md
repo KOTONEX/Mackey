@@ -14,13 +14,13 @@
 
 ## 自测
 
-- [ ] `make lint` 通过
-- [ ] `make check` 通过
-- [ ] `make test` 通过（离线单元测试）
-- [ ] 条件允许时 `make test-contract` / `make test-e2e` 通过（未运行时请在下方说明原因：离线 / 无 GNOME 会话 / 缺 `input` 组等）
+- [ ] `cargo run --quiet -- 检查` 通过
+- [ ] `cargo run --quiet -- 校验` 通过
+- [ ] `cargo run --quiet -- 测试` 通过（离线单元测试）
+- [ ] 条件允许时 `cargo run --quiet -- 扩展测试` / `cargo run --quiet -- 端到端测试` 通过（未运行时请在下方说明原因：离线 / 无 GNOME 会话 / 缺 `input` 组等）
 
 ## 约束检查
 
 - [ ] 没有写入 `$HOME` 之外的路径，未使用 `sudo`，未以 root 运行
-- [ ] 行为变更只改了 `config/checklist.json`，并已重新运行 `make generate`
-- [ ] 未手工编辑自动生成文件（`docs/03-行为清单.md`）
+- [ ] 行为变更只改了 `配置/行为清单.json`，并已重新运行 `cargo run --quiet -- 生成 --文档 "$PWD/文档/03-行为清单.md"`
+- [ ] 未手工编辑自动生成文件（`文档/03-行为清单.md`）

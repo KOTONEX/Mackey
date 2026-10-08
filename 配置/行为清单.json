@@ -1,0 +1,1417 @@
+{
+  "版本": 1,
+  "元信息": {
+    "名称": "Mackey 行为清单",
+    "说明": "这是唯一事实源：mackey 生成 依据它生成 xremap 配置与 文档/03-行为清单.md。",
+    "修饰键": [
+      "C",
+      "S",
+      "A",
+      "Super"
+    ],
+    "吞键输出": "F24",
+    "归属说明": "归属 分类：macos = 本工具改写成 macOS 行为（策略 translate/auto 且 目标组合 非空）；gnome = 保持 GNOME 默认（放行/原生等价/可选/无法模拟）。mackey 生成 会校验 归属 与 策略/目标组合 是否一致。"
+  },
+  "应用档": {
+    "终端": {
+      "标签": "终端",
+      "原因": "终端里 Ctrl+C/Ctrl+Z/Ctrl+D 是信号或 EOF，绝不能被「复制/撤销/EOF」占用，必须单独一套。",
+      "匹配": [
+        "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/"
+      ]
+    },
+    "文件管理器": {
+      "标签": "文件管理器",
+      "原因": "同一组键在文件管理器里语义不同（⌘⌫=移到废纸篓、⌘↑=上级目录、⌘I=显示简介）。",
+      "匹配": [
+        "/^(org\\.gnome\\.Nautilus|nautilus|Nautilus|org\\.gnome\\.Files|dolphin|Dolphin|thunar|Thunar|nemo|Nemo|org\\.nemo\\.Nemo|pcmanfm|pcmanfm-qt|krusader|caja|Caja|Files)$/"
+      ]
+    }
+  },
+  "迁移规则": [
+    {
+      "标识": "app-grid",
+      "模式": "org.gnome.shell.keybindings",
+      "键名": "toggle-application-view",
+      "原组合": "Super-a",
+      "新组合": "Super-A-a",
+      "标签": "显示应用网格",
+      "触发条目": "select-all"
+    },
+    {
+      "标识": "message-tray",
+      "模式": "org.gnome.shell.keybindings",
+      "键名": "toggle-message-tray",
+      "原组合": [
+        "Super-v",
+        "Super-m"
+      ],
+      "新组合": [
+        "Super-A-v",
+        "Super-A-m"
+      ],
+      "标签": "通知/日历托盘",
+      "触发条目": "paste"
+    },
+    {
+      "标识": "quick-settings",
+      "模式": "org.gnome.shell.keybindings",
+      "键名": "toggle-quick-settings",
+      "原组合": "Super-s",
+      "新组合": "Super-A-s",
+      "标签": "快速设置面板",
+      "触发条目": "save"
+    },
+    {
+      "标识": "show-desktop",
+      "模式": "org.gnome.desktop.wm.keybindings",
+      "键名": "show-desktop",
+      "原组合": "Super-d",
+      "新组合": "Super-S-d",
+      "标签": "显示桌面",
+      "触发条目": "bookmark"
+    },
+    {
+      "标识": "notification",
+      "模式": "org.gnome.shell.keybindings",
+      "键名": "focus-active-notification",
+      "原组合": "Super-n",
+      "新组合": "Super-A-n",
+      "标签": "聚焦通知",
+      "触发条目": "new"
+    },
+    {
+      "标识": "switch-monitor",
+      "模式": "org.gnome.mutter.keybindings",
+      "键名": "switch-monitor",
+      "原组合": "Super-p",
+      "新组合": "Super-A-p",
+      "标签": "切换显示器",
+      "触发条目": "print"
+    },
+    {
+      "标识": "tile-left",
+      "模式": "org.gnome.mutter.keybindings",
+      "键名": "toggle-tiled-left",
+      "原组合": "Super-Left",
+      "新组合": "Super-C-Left",
+      "标签": "左半屏平铺",
+      "触发条目": "line-start"
+    },
+    {
+      "标识": "tile-right",
+      "模式": "org.gnome.mutter.keybindings",
+      "键名": "toggle-tiled-right",
+      "原组合": "Super-Right",
+      "新组合": "Super-C-Right",
+      "标签": "右半屏平铺",
+      "触发条目": "line-end"
+    },
+    {
+      "标识": "move-monitor",
+      "模式": "org.gnome.desktop.wm.keybindings",
+      "键名": "move-to-monitor-left|move-to-monitor-right|move-to-monitor-up|move-to-monitor-down",
+      "原组合": "Super-S-{D}",
+      "新组合": "Super-C-S-{D}",
+      "标签": "窗口移到其他显示器",
+      "触发条目": "select-to-line-start"
+    },
+    {
+      "标识": "maximize",
+      "模式": "org.gnome.desktop.wm.keybindings",
+      "键名": "maximize",
+      "原组合": "Super-Up",
+      "新组合": "Super-A-Up",
+      "标签": "最大化窗口",
+      "触发条目": "doc-start"
+    },
+    {
+      "标识": "unmaximize",
+      "模式": "org.gnome.desktop.wm.keybindings",
+      "键名": "unmaximize",
+      "原组合": "Super-Down",
+      "新组合": "Super-A-Down",
+      "标签": "还原窗口",
+      "触发条目": "doc-end"
+    },
+    {
+      "标识": "dash-apps",
+      "模式": "org.gnome.shell.keybindings",
+      "键名": "switch-to-application-1..9",
+      "原组合": "Super-1..9",
+      "新组合": "Super-C-S-1..9",
+      "标签": "程序坞第 N 个应用",
+      "触发条目": "tab-1..9"
+    },
+    {
+      "标识": "lock-screen",
+      "模式": "org.gnome.settings-daemon.plugins.media-keys",
+      "键名": "screensaver",
+      "原组合": "Super-l",
+      "新组合": "Super-C-q",
+      "标签": "锁屏",
+      "触发条目": "location-bar"
+    },
+    {
+      "标识": "input-source",
+      "模式": "org.gnome.desktop.wm.keybindings",
+      "键名": "switch-input-source",
+      "原组合": [
+        "Super-space",
+        "Super-S-space"
+      ],
+      "新组合": [
+        "Super-C-space",
+        "Super-C-S-space"
+      ],
+      "标签": "输入法/输入源切换",
+      "触发条目": "spotlight"
+    }
+  ],
+  "条目": [
+    {
+      "标识": "copy",
+      "苹果按键": "⌘C",
+      "描述": "复制",
+      "触发键": "Super-c",
+      "目标组合": {
+        "通用": "C-c",
+        "终端": "C-S-c",
+        "文件管理器": "C-c"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "终端必须走 Ctrl+Shift+C，否则触发 SIGINT。"
+    },
+    {
+      "标识": "paste",
+      "苹果按键": "⌘V",
+      "描述": "粘贴",
+      "触发键": "Super-v",
+      "目标组合": {
+        "通用": "C-v",
+        "终端": "C-S-v",
+        "文件管理器": "C-v"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+V 被 GNOME「通知托盘」占用",
+      "迁移引用": "message-tray",
+      "说明": "默认策略=接管并把 GNOME 托盘功能平移到 ⌘⇧V。"
+    },
+    {
+      "标识": "paste-plain",
+      "苹果按键": "⌘⇧V",
+      "描述": "粘贴为纯文本",
+      "触发键": "Super-S-v",
+      "目标组合": {
+        "通用": "C-S-v",
+        "终端": "C-S-v"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "GTK/Qt 应用普遍原生支持 Ctrl+Shift+V。macOS 的 ⌥⌘⇧V 变体未单独映射（Linux 侧 Ctrl+Shift+V 语义相同）。"
+    },
+    {
+      "标识": "cut",
+      "苹果按键": "⌘X",
+      "描述": "剪切",
+      "触发键": "Super-x",
+      "目标组合": {
+        "通用": "C-x",
+        "终端": "C-S-x",
+        "文件管理器": "C-x"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "终端里 Ctrl+Shift+X 一般不绑定，等于无害。"
+    },
+    {
+      "标识": "select-all",
+      "苹果按键": "⌘A",
+      "描述": "全选",
+      "触发键": "Super-a",
+      "目标组合": {
+        "通用": "C-a",
+        "终端": "C-S-a",
+        "文件管理器": "C-a"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+A 被 GNOME「应用网格」占用",
+      "迁移引用": "app-grid",
+      "说明": "终端用 Ctrl+Shift+A（readline 的 Ctrl+A=行首 保持不变）。"
+    },
+    {
+      "标识": "undo",
+      "苹果按键": "⌘Z",
+      "描述": "撤销",
+      "触发键": "Super-z",
+      "目标组合": {
+        "通用": "C-z",
+        "终端": "F24",
+        "文件管理器": "C-z"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "终端里 Ctrl+Z 会 SIGTSTP 挂起前台进程，故吞掉（发射无害的 F24）。"
+    },
+    {
+      "标识": "redo",
+      "苹果按键": "⌘⇧Z",
+      "描述": "重做",
+      "触发键": "Super-S-z",
+      "目标组合": {
+        "通用": "C-S-z",
+        "终端": "F24",
+        "文件管理器": "C-S-z"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "少数应用（如 LibreOffice 系）用 Ctrl+Y 重做；要改的话在 配置/行为清单.json 里把 目标组合 改成 C-y 后重新生成。"
+    },
+    {
+      "标识": "save",
+      "苹果按键": "⌘S",
+      "描述": "保存",
+      "触发键": "Super-s",
+      "目标组合": {
+        "通用": "C-s",
+        "终端": "C-S-s"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+S 被 GNOME「快速设置」占用",
+      "迁移引用": "quick-settings",
+      "说明": "终端里 Ctrl+S 是 XOFF 流控，故走 Ctrl+Shift+S。"
+    },
+    {
+      "标识": "save-as",
+      "苹果按键": "⌘⇧S",
+      "描述": "另存为",
+      "触发键": "Super-S-s",
+      "目标组合": {
+        "通用": "C-S-s",
+        "终端": "C-S-s"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "open",
+      "苹果按键": "⌘O",
+      "描述": "打开",
+      "触发键": "Super-o",
+      "目标组合": {
+        "通用": "C-o",
+        "终端": "F24"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "终端里 Ctrl+O 会丢弃输出/取下一行，故吞掉。"
+    },
+    {
+      "标识": "print",
+      "苹果按键": "⌘P",
+      "描述": "打印/打印预览",
+      "触发键": "Super-p",
+      "目标组合": {
+        "通用": "C-p",
+        "终端": "C-S-p"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+P 被 GNOME「切换显示器」占用",
+      "迁移引用": "switch-monitor",
+      "说明": "硬件 XF86Display 键仍然可以直接切显示器。"
+    },
+    {
+      "标识": "find",
+      "苹果按键": "⌘F",
+      "描述": "查找",
+      "触发键": "Super-f",
+      "目标组合": {
+        "通用": "C-f",
+        "终端": "C-S-f",
+        "文件管理器": "C-f"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "find-next",
+      "苹果按键": "⌘G",
+      "描述": "查找下一个",
+      "触发键": "Super-g",
+      "目标组合": {
+        "通用": "C-g",
+        "终端": "F24"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "终端里 Ctrl+G 是 readline abort，故吞掉。"
+    },
+    {
+      "标识": "find-prev",
+      "苹果按键": "⌘⇧G",
+      "描述": "查找上一个",
+      "触发键": "Super-S-g",
+      "目标组合": {
+        "通用": "C-S-g",
+        "终端": "F24"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "comment-toggle",
+      "苹果按键": "⌘/",
+      "描述": "注释 / 取消注释",
+      "触发键": "Super-slash",
+      "目标组合": {
+        "通用": "C-slash"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "编辑器/IDE 通用（VS Code、JetBrains 等）；未绑定的应用里是无害空操作。"
+    },
+    {
+      "标识": "split-editor",
+      "苹果按键": "⌘\\",
+      "描述": "拆分编辑器/分屏",
+      "触发键": "Super-backslash",
+      "目标组合": {
+        "通用": "C-backslash",
+        "终端": "F24"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "VS Code 等编辑器的「拆分编辑器」；终端里 Ctrl+\\ 是 SIGQUIT，故吞掉。"
+    },
+    {
+      "标识": "command-palette",
+      "苹果按键": "⌘⇧P",
+      "描述": "命令面板",
+      "触发键": "Super-S-p",
+      "目标组合": {
+        "通用": "C-S-p"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "VS Code 等编辑器的命令面板；GNOME 的「切换显示器」已让路到 ⌥⌘P。"
+    },
+    {
+      "标识": "find-action",
+      "苹果按键": "⌘⇧A",
+      "描述": "查找动作（Find Action）",
+      "触发键": "Super-S-a",
+      "目标组合": {
+        "通用": "C-S-a"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "JetBrains 系 IDE 的 Find Action；GNOME 的「应用网格」已让路到 ⌥⌘A。"
+    },
+    {
+      "标识": "devtools",
+      "苹果按键": "⌥⌘I",
+      "描述": "开发者工具",
+      "触发键": "Super-A-i",
+      "目标组合": {
+        "通用": "C-S-i"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "浏览器 DevTools；macOS 上就是 ⌥⌘I。"
+    },
+    {
+      "标识": "devtools-console",
+      "苹果按键": "⌥⌘J",
+      "描述": "开发者控制台",
+      "触发键": "Super-A-j",
+      "目标组合": {
+        "通用": "C-S-j"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "浏览器 Console；macOS 上就是 ⌥⌘J。"
+    },
+    {
+      "标识": "new",
+      "苹果按键": "⌘N",
+      "描述": "新建（窗口/文档）",
+      "触发键": "Super-n",
+      "目标组合": {
+        "通用": "C-n",
+        "终端": "C-S-n",
+        "文件管理器": "C-n"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+N 被 GNOME「聚焦通知」占用",
+      "迁移引用": "notification",
+      "说明": "文件管理器里 Ctrl+N=新窗口，Ctrl+Shift+N=新建文件夹（见 new-folder）；终端用 Ctrl+Shift+N 开新窗口。"
+    },
+    {
+      "标识": "new-folder",
+      "苹果按键": "⌘⇧N",
+      "描述": "新建文件夹",
+      "触发键": "Super-S-n",
+      "目标组合": {
+        "通用": "C-S-n",
+        "终端": "C-S-n",
+        "文件管理器": "C-S-n"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "new-tab",
+      "苹果按键": "⌘T",
+      "描述": "新建标签页",
+      "触发键": "Super-t",
+      "目标组合": {
+        "通用": "C-t",
+        "终端": "C-S-t",
+        "文件管理器": "C-t"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "reopen-tab",
+      "苹果按键": "⌘⇧T",
+      "描述": "恢复关闭的标签页",
+      "触发键": "Super-S-t",
+      "目标组合": {
+        "通用": "C-S-t"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "close-tab",
+      "苹果按键": "⌘W",
+      "描述": "关闭标签页/窗口",
+      "触发键": "Super-w",
+      "目标组合": {
+        "通用": "C-w",
+        "终端": "C-S-w",
+        "文件管理器": "C-w"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "终端里 Ctrl+W 是删除前一个词，故用 Ctrl+Shift+W 关窗。"
+    },
+    {
+      "标识": "close-window",
+      "苹果按键": "⌘⇧W",
+      "描述": "关闭窗口",
+      "触发键": "Super-S-w",
+      "目标组合": {
+        "通用": "C-S-w"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "quit",
+      "苹果按键": "⌘Q",
+      "描述": "退出应用",
+      "触发键": "Super-q",
+      "目标组合": {},
+      "状态": "approx",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "冲突": "Super+Q 是 GNOME「关闭窗口」",
+      "说明": "语义天然对齐（macOS ⌘Q 也是退出），直接让 GNOME 处理，不接管。"
+    },
+    {
+      "标识": "hide",
+      "苹果按键": "⌘H",
+      "描述": "隐藏应用",
+      "触发键": "Super-h",
+      "目标组合": {},
+      "状态": "approx",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "冲突": "Super+H 是 GNOME「最小化窗口」",
+      "说明": "GNOME 没有「隐藏整个应用」的概念，最小化是可达的最接近行为。"
+    },
+    {
+      "标识": "minimize",
+      "苹果按键": "⌘M",
+      "描述": "最小化窗口",
+      "触发键": "Super-m",
+      "目标组合": {
+        "通用": "Super-h"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+M 是 GNOME「通知托盘」（与 Super+V 同义）",
+      "迁移引用": "message-tray",
+      "说明": "复用 GNOME 自己的「最小化」绑定（Super+H）作为输出，语义最稳。"
+    },
+    {
+      "标识": "fullscreen",
+      "苹果按键": "⌃⌘F",
+      "描述": "全屏",
+      "触发键": "Super-C-f",
+      "目标组合": {
+        "通用": "F11",
+        "终端": "F11"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "macOS 的全屏键；F11 在浏览器、终端与多数应用里通用。"
+    },
+    {
+      "标识": "line-start",
+      "苹果按键": "⌘←",
+      "描述": "移到行首",
+      "触发键": "Super-Left",
+      "目标组合": {
+        "通用": "Home",
+        "终端": "Home"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+← 是 GNOME「左半屏平铺」",
+      "迁移引用": "tile-left"
+    },
+    {
+      "标识": "line-end",
+      "苹果按键": "⌘→",
+      "描述": "移到行尾",
+      "触发键": "Super-Right",
+      "目标组合": {
+        "通用": "End",
+        "终端": "End"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+→ 是 GNOME「右半屏平铺」",
+      "迁移引用": "tile-right"
+    },
+    {
+      "标识": "select-to-line-start",
+      "苹果按键": "⌘⇧←",
+      "描述": "选中到行首",
+      "触发键": "Super-S-Left",
+      "目标组合": {
+        "通用": "S-Home"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+⇧← 是 GNOME「窗口移到左侧显示器」",
+      "迁移引用": "move-monitor"
+    },
+    {
+      "标识": "select-to-line-end",
+      "苹果按键": "⌘⇧→",
+      "描述": "选中到行尾",
+      "触发键": "Super-S-Right",
+      "目标组合": {
+        "通用": "S-End"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+⇧→ 是 GNOME「窗口移到右侧显示器」",
+      "迁移引用": "move-monitor"
+    },
+    {
+      "标识": "doc-start",
+      "苹果按键": "⌘↑",
+      "描述": "移到文档开头/回到顶部",
+      "触发键": "Super-Up",
+      "目标组合": {
+        "通用": "C-Home",
+        "终端": "S-PAGEUP"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "maximize",
+      "冲突": "GNOME 默认把 Super+↑ 绑成「最大化」，冲突时自动迁移到 ⌥⌘↑",
+      "说明": "终端用 Shift+PageUp 翻页，等价于 macOS 终端的 ⌘↑。"
+    },
+    {
+      "标识": "doc-end",
+      "苹果按键": "⌘↓",
+      "描述": "移到文档末尾/到底部",
+      "触发键": "Super-Down",
+      "目标组合": {
+        "通用": "C-End",
+        "终端": "S-PAGEDOWN"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "unmaximize",
+      "冲突": "GNOME 默认把 Super+↓ 绑成「还原窗口」，冲突时自动迁移到 ⌥⌘↓"
+    },
+    {
+      "标识": "select-to-doc-start",
+      "苹果按键": "⌘⇧↑",
+      "描述": "选中到文档开头",
+      "触发键": "Super-S-Up",
+      "目标组合": {
+        "通用": "C-S-Home"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "select-to-doc-end",
+      "苹果按键": "⌘⇧↓",
+      "描述": "选中到文档末尾",
+      "触发键": "Super-S-Down",
+      "目标组合": {
+        "通用": "C-S-End"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "delete-line-start",
+      "苹果按键": "⌘⌫",
+      "描述": "删除到行首",
+      "触发键": "Super-BackSpace",
+      "目标组合": {
+        "通用": "S-Home,Delete",
+        "终端": "C-u",
+        "文件管理器": "Delete"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "文本里用「Shift+Home 选中到行首 → Delete」实现（Shift+Delete 在 GTK 里是剪切，原 Home→Shift+Delete 序列在 GTK 应用里不会删除）；文件管理器里 Delete=移到废纸篓，终端里 Ctrl+U=删到行首。"
+    },
+    {
+      "标识": "word-left",
+      "苹果按键": "⌥←",
+      "描述": "向左跳一个词",
+      "触发键": "A-Left",
+      "目标组合": {
+        "通用": "C-Left",
+        "终端": "C-Left"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "顺带解放 Alt+←（Linux 上它常被浏览器当「后退」，而 macOS 的后退是 ⌘[）。"
+    },
+    {
+      "标识": "word-right",
+      "苹果按键": "⌥→",
+      "描述": "向右跳一个词",
+      "触发键": "A-Right",
+      "目标组合": {
+        "通用": "C-Right",
+        "终端": "C-Right"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "select-word-left",
+      "苹果按键": "⌥⇧←",
+      "描述": "向左选中一个词",
+      "触发键": "A-S-Left",
+      "目标组合": {
+        "通用": "C-S-Left"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "select-word-right",
+      "苹果按键": "⌥⇧→",
+      "描述": "向右选中一个词",
+      "触发键": "A-S-Right",
+      "目标组合": {
+        "通用": "C-S-Right"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "para-up",
+      "苹果按键": "⌥↑",
+      "描述": "上移一个段落/上滚",
+      "触发键": "A-Up",
+      "目标组合": {
+        "通用": "C-Up",
+        "终端": "S-PAGEUP"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "para-down",
+      "苹果按键": "⌥↓",
+      "描述": "下移一个段落/下滚",
+      "触发键": "A-Down",
+      "目标组合": {
+        "通用": "C-Down",
+        "终端": "S-PAGEDOWN"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "delete-word-left",
+      "苹果按键": "⌥⌫",
+      "描述": "删除前一个词",
+      "触发键": "A-BackSpace",
+      "目标组合": {
+        "通用": "C-BackSpace",
+        "终端": "C-BackSpace"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "delete-word-right",
+      "苹果按键": "⌥⌦",
+      "描述": "删除后一个词",
+      "触发键": "A-Delete",
+      "目标组合": {
+        "通用": "C-Delete",
+        "终端": "C-Delete"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "tab-1",
+      "苹果按键": "⌘1",
+      "描述": "切换到第 1 个标签页",
+      "触发键": "Super-1",
+      "目标组合": {
+        "通用": "C-1",
+        "终端": "A-1"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+1 是 GNOME「启动/切换程序坞第 1 个应用」",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-2",
+      "苹果按键": "⌘2",
+      "描述": "切换到第 2 个标签页",
+      "触发键": "Super-2",
+      "目标组合": {
+        "通用": "C-2",
+        "终端": "A-2"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+2 是 GNOME「程序坞第 2 个应用」",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-3",
+      "苹果按键": "⌘3",
+      "描述": "切换到第 3 个标签页",
+      "触发键": "Super-3",
+      "目标组合": {
+        "通用": "C-3",
+        "终端": "A-3"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-4",
+      "苹果按键": "⌘4",
+      "描述": "切换到第 4 个标签页",
+      "触发键": "Super-4",
+      "目标组合": {
+        "通用": "C-4",
+        "终端": "A-4"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-5",
+      "苹果按键": "⌘5",
+      "描述": "切换到第 5 个标签页",
+      "触发键": "Super-5",
+      "目标组合": {
+        "通用": "C-5",
+        "终端": "A-5"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-6",
+      "苹果按键": "⌘6",
+      "描述": "切换到第 6 个标签页",
+      "触发键": "Super-6",
+      "目标组合": {
+        "通用": "C-6",
+        "终端": "A-6"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-7",
+      "苹果按键": "⌘7",
+      "描述": "切换到第 7 个标签页",
+      "触发键": "Super-7",
+      "目标组合": {
+        "通用": "C-7",
+        "终端": "A-7"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-8",
+      "苹果按键": "⌘8",
+      "描述": "切换到第 8 个标签页",
+      "触发键": "Super-8",
+      "目标组合": {
+        "通用": "C-8",
+        "终端": "A-8"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "tab-9",
+      "苹果按键": "⌘9",
+      "描述": "切换到第 9 个标签页",
+      "触发键": "Super-9",
+      "目标组合": {
+        "通用": "C-9",
+        "终端": "A-9"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "迁移引用": "dash-apps"
+    },
+    {
+      "标识": "prev-tab",
+      "苹果按键": "⌘⇧[",
+      "描述": "上一个标签页",
+      "触发键": "Super-S-LEFTBRACE",
+      "目标组合": {
+        "通用": "C-PAGEUP"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "macOS 的备选 ⌃⇧⇥ 不映射：Linux 侧原生就有 Ctrl+Tab / Ctrl+PageUp。"
+    },
+    {
+      "标识": "next-tab",
+      "苹果按键": "⌘⇧]",
+      "描述": "下一个标签页",
+      "触发键": "Super-S-RIGHTBRACE",
+      "目标组合": {
+        "通用": "C-PAGEDOWN"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "macOS 的备选 ⌃⇥ 不映射：Linux 侧原生就有 Ctrl+Tab / Ctrl+PageDown。"
+    },
+    {
+      "标识": "back",
+      "苹果按键": "⌘[",
+      "描述": "后退",
+      "触发键": "Super-LEFTBRACE",
+      "目标组合": {
+        "通用": "A-Left"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "把浏览器原本的 Alt+← 语义保留下来（⌥← 已被用于「按词移动」）。"
+    },
+    {
+      "标识": "forward",
+      "苹果按键": "⌘]",
+      "描述": "前进",
+      "触发键": "Super-RIGHTBRACE",
+      "目标组合": {
+        "通用": "A-Right"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "location-bar",
+      "苹果按键": "⌘L",
+      "描述": "聚焦地址栏/搜索栏",
+      "触发键": "Super-l",
+      "目标组合": {
+        "通用": "C-l",
+        "终端": "C-l"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+L 是 GNOME「锁屏」",
+      "迁移引用": "lock-screen",
+      "说明": "锁屏平移到 ⌃⌘Q（与 macOS 一致）；终端里 Ctrl+L = 清屏。"
+    },
+    {
+      "标识": "clear",
+      "苹果按键": "⌘K",
+      "描述": "清屏/清空",
+      "触发键": "Super-k",
+      "目标组合": {
+        "通用": "C-k",
+        "终端": "C-l"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "bookmark",
+      "苹果按键": "⌘D",
+      "描述": "收藏/复制",
+      "触发键": "Super-d",
+      "目标组合": {
+        "通用": "C-d",
+        "终端": "F24"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+D 是 GNOME「显示桌面」",
+      "迁移引用": "show-desktop",
+      "说明": "终端里 Ctrl+D = EOF，会关掉 shell，必须吞掉。"
+    },
+    {
+      "标识": "reload",
+      "苹果按键": "⌘R",
+      "描述": "刷新/重新载入",
+      "触发键": "Super-r",
+      "目标组合": {
+        "通用": "C-r",
+        "终端": "F24"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "终端里 Ctrl+R 会触发 readline 反向搜索，故吞掉。"
+    },
+    {
+      "标识": "hard-reload",
+      "苹果按键": "⌘⇧R",
+      "描述": "强制刷新",
+      "触发键": "Super-S-r",
+      "目标组合": {
+        "通用": "C-S-r",
+        "终端": "F24"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "preferences",
+      "苹果按键": "⌘,",
+      "描述": "偏好设置",
+      "触发键": "Super-comma",
+      "目标组合": {
+        "通用": "C-comma"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "zoom-in",
+      "苹果按键": "⌘+",
+      "描述": "放大",
+      "触发键": "Super-S-equal",
+      "目标组合": {
+        "通用": "C-S-equal",
+        "终端": "C-S-equal"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "等价于 Ctrl+⇧+=（多数应用同时接受 Ctrl+加号）。若某个终端不认这个组合，把 目标组合.terminal 改成 C-equal。"
+    },
+    {
+      "标识": "zoom-out",
+      "苹果按键": "⌘-",
+      "描述": "缩小",
+      "触发键": "Super-minus",
+      "目标组合": {
+        "通用": "C-minus",
+        "终端": "C-minus"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "zoom-reset",
+      "苹果按键": "⌘0",
+      "描述": "恢复默认缩放",
+      "触发键": "Super-0",
+      "目标组合": {
+        "通用": "C-0",
+        "终端": "C-0"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate"
+    },
+    {
+      "标识": "spotlight",
+      "苹果按键": "⌘Space",
+      "描述": "聚焦搜索（Spotlight）",
+      "触发键": "Super-space",
+      "目标组合": {
+        "通用": "Super_L"
+      },
+      "状态": "relocated",
+      "归属": "macos",
+      "策略": "auto",
+      "冲突": "Super+Space 是 GNOME「输入源切换」",
+      "迁移引用": "input-source",
+      "说明": "输出一个「单击 Super」，等价于按下 GNOME 的 Super 键→打开概览+搜索。输入法切换平移到 ⌃⌘Space；若你用 fcitx5 的 Ctrl+Space，不受影响。若在你的 GNOME 版本上表现为「概览闪一下就关」，把 目标组合.default 改成 \"Super_L\" 之外的值（例如用 GNOME 概览快捷键 Ctrl+Alt+Up 之类）即可——这一条需要真实键盘实测。"
+    },
+    {
+      "标识": "app-switcher",
+      "苹果按键": "⌘Tab",
+      "描述": "切换应用",
+      "触发键": "Super-Tab",
+      "目标组合": {},
+      "状态": "native",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "说明": "GNOME 原生 Super+Tab 与 macOS 语义完全一致，保持不动。"
+    },
+    {
+      "标识": "app-switcher-back",
+      "苹果按键": "⌘⇧Tab",
+      "描述": "反向切换应用",
+      "触发键": "Super-S-Tab",
+      "目标组合": {},
+      "状态": "native",
+      "归属": "gnome",
+      "策略": "passthrough"
+    },
+    {
+      "标识": "window-switcher",
+      "苹果按键": "⌘`",
+      "描述": "同一应用内切换窗口",
+      "触发键": "Super-grave",
+      "目标组合": {},
+      "状态": "native",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "说明": "GNOME 原生 Super+` 语义一致。"
+    },
+    {
+      "标识": "mission-control",
+      "苹果按键": "⌃↑",
+      "描述": "调度中心",
+      "触发键": "C-Up",
+      "目标组合": {},
+      "状态": "optin",
+      "归属": "gnome",
+      "策略": "skip",
+      "说明": "默认不接管：Ctrl+↑ 在 Linux 文本编辑里是「上移段落」，接管会破坏 Linux 侧习惯。需要时把 策略 改成 translate 并给 目标组合.default=Super_L。"
+    },
+    {
+      "标识": "app-expose",
+      "苹果按键": "⌃↓",
+      "描述": "应用窗口展览",
+      "触发键": "C-Down",
+      "目标组合": {},
+      "状态": "optin",
+      "归属": "gnome",
+      "策略": "skip",
+      "说明": "默认不接管，理由同上；可改为 translate → Super-grave。"
+    },
+    {
+      "标识": "lock",
+      "苹果按键": "⌃⌘Q",
+      "描述": "锁定屏幕",
+      "触发键": "Super-C-q",
+      "目标组合": {},
+      "状态": "relocated",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "说明": "不自己合成按键：GNOME 的锁屏绑定被迁移到 ⌃⌘Q，所以这里直接放行给 GNOME 处理（与 macOS 的锁屏键一致）。原 Super+L 让给「聚焦地址栏」（见 location-bar）。"
+    },
+    {
+      "标识": "screenshot-region",
+      "苹果按键": "⌘⇧3",
+      "描述": "区域截图（选区）",
+      "触发键": "Super-S-3",
+      "目标组合": {
+        "通用": "Print"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "本清单的定制映射：打开交互式截图 UI（输出跟随实测的 `show-screenshot-ui` 绑定，默认 Print），UI 默认即选区模式，回车截图、Esc 取消；GNOME 没有「选区直接落盘」的加速键。macOS 惯例是 ⇧⌘3 全屏 / ⇧⌘4 选区，这里按需求对调（见下两条）。"
+    },
+    {
+      "标识": "screenshot-all",
+      "苹果按键": "⌘⇧4",
+      "描述": "全屏截图",
+      "触发键": "Super-S-4",
+      "目标组合": {
+        "通用": "S-Print"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "输出跟随本机 dconf 实测的 GNOME `screenshot` 绑定（默认 ⇧Print，无 UI 直接全屏落盘，写入 ~/Pictures/Screenshots 并放进剪贴板）；与 macOS 惯例的 ⇧⌘3 位置对调。"
+    },
+    {
+      "标识": "screenshot-window",
+      "苹果按键": "⌘⇧5",
+      "描述": "窗口截图",
+      "触发键": "Super-S-5",
+      "目标组合": {
+        "通用": "A-Print"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "输出跟随本机 dconf 实测的 GNOME `screenshot-window` 绑定（默认 ⌥Print），直接截当前窗口（落盘+剪贴板）；macOS 要 ⇧⌘4 后再按空格，这里一步到位。交互式面板（含录屏，按 v）仍可经 ⌘⇧3 打开。"
+    },
+    {
+      "标识": "quick-look",
+      "苹果按键": "空格",
+      "描述": "快速预览",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "native",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "说明": "文件管理器里空格预览由 GNOME Sushi 提供，原生可用（需装 gnome-sushi）。"
+    },
+    {
+      "标识": "properties",
+      "苹果按键": "⌘I",
+      "描述": "显示简介/属性",
+      "触发键": "Super-i",
+      "目标组合": {
+        "通用": "C-i",
+        "文件管理器": "A-ENTER",
+        "终端": "F24"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "文件管理器用 Alt+Enter 打开属性；终端里 Ctrl+I 是 TAB，故吞掉。"
+    },
+    {
+      "标识": "parent-folder",
+      "苹果按键": "⌘↑(Finder)",
+      "描述": "回到上一级目录",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "native",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "说明": "Nautilus 原生 Alt+↑；⌘↑ 已被「文档开头」占用，文件管理器里保持 Ctrl+Home 语义。"
+    },
+    {
+      "标识": "hidden-files",
+      "苹果按键": "⌘⇧.",
+      "描述": "显示/隐藏文件",
+      "触发键": "Super-S-DOT",
+      "目标组合": {
+        "文件管理器": "C-h"
+      },
+      "状态": "mapped",
+      "归属": "macos",
+      "策略": "translate",
+      "说明": "只映射文件管理器：Nautilus 的 Ctrl+H 显示隐藏文件。不做全局映射——Ctrl+H 在 GNOME 文本编辑器里是「查找替换」，全局映射会误触发。"
+    },
+    {
+      "标识": "move-to-trash",
+      "苹果按键": "⌘⌫(Finder)",
+      "描述": "移到废纸篓",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "native",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "说明": "见 delete-line-start 的 files 覆写：文件管理器里 ⌘⌫ 输出 Delete。"
+    },
+    {
+      "标识": "emoji",
+      "苹果按键": "⌃⌘Space",
+      "描述": "表情符号面板",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "approx",
+      "归属": "gnome",
+      "策略": "passthrough",
+      "说明": "⌃⌘Space 已被迁移后的「输入法切换」占用，本工具不接管；GNOME 原生的表情面板是 Ctrl+. 或 Ctrl+;（与 macOS 的 ⌃⌘Space 不是同一个键）。"
+    },
+    {
+      "标识": "force-quit",
+      "苹果按键": "⌥⌘Esc",
+      "描述": "强制退出对话框",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "impossible",
+      "归属": "gnome",
+      "策略": "skip",
+      "说明": "GNOME 没有等价对话框；可用系统菜单「强制退出」或系统监视器。"
+    },
+    {
+      "标识": "log-out",
+      "苹果按键": "⇧⌘Q",
+      "描述": "退出登录",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "impossible",
+      "归属": "gnome",
+      "策略": "skip",
+      "说明": "GNOME 没有可配置的注销加速键（注销/关机走系统菜单），无法映射。"
+    },
+    {
+      "标识": "switch-space",
+      "苹果按键": "⌃← / ⌃→",
+      "描述": "切换桌面空间",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "impossible",
+      "归属": "gnome",
+      "策略": "skip",
+      "说明": "Ctrl+←/→ 在 Linux 是「按词移动」，接管代价过大；GNOME 侧保持 Super+PageUp/PageDown、Ctrl+Alt+←/→。"
+    },
+    {
+      "标识": "cmd-release-hints",
+      "苹果按键": "按住 ⌘ 显示快捷键提示",
+      "描述": "菜单栏快捷键提示",
+      "触发键": null,
+      "目标组合": {},
+      "状态": "impossible",
+      "归属": "gnome",
+      "策略": "skip",
+      "说明": "属于 macOS 菜单栏体系，GNOME 无对应概念。"
+    }
+  ],
+  "吞控制组合": {
+    "说明": "替换模式：macOS 语义下 Ctrl+C/X/V/Z/A 不是复制/剪切/粘贴/撤销/全选。通过一个独立的 keymap 实现，其 application.not = 终端配置档 + 例外应用，因此真实终端与内嵌终端应用（VS Code / JetBrains 等）里这些组合原样可用（Ctrl+C 仍是 SIGINT、Ctrl+A/Z/W/L 仍是 readline/作业控制），其余应用里被吞掉。要为你自己的编辑器放行，在 配置/行为清单.json 里把它的 wm_class 正则加进 例外应用，再 mackey 生成 重新生成即可。",
+    "启用": true,
+    "触发组合": [
+      "C-c",
+      "C-x",
+      "C-v",
+      "C-z",
+      "C-a"
+    ],
+    "例外应用档": [
+      "终端"
+    ],
+    "例外应用": [
+      "/^(code|code-insiders|codium|com\\.visualstudio\\.code|jetbrains-.+|com\\.jetbrains\\..+|gnome-builder|org\\.gnome\\.Builder|emacs|sublime_text|zed|dev\\.zed\\.Zed)$/"
+    ]
+  },
+  "吞终端组合": {
+    "说明": "终端配置档里的第二层替换：吞掉物理 Ctrl+Shift+C / Ctrl+Shift+V，终端里复制/粘贴只保留 ⌘C/⌘V。⌘C/⌘V 的输出正是这两个组合，但它走引擎合成路径——xremap 不读自己合成的按键，所以不受影响；只作用于终端配置档，其余应用原样放行。不带 Shift 的 Ctrl+V 特意不吞：readline 的 quoted-insert 等仍可用；若你的终端用 Ctrl+V 直接粘贴、希望禁掉，把 C-v 加进 triggers 即可。",
+    "启用": true,
+    "触发组合": [
+      "C-S-c",
+      "C-S-v"
+    ]
+  },
+  "泛化兜底": {
+    "说明": "显式条目之外的 ⌘+字母/数字组合，做「泛化翻译」⌘X→Ctrl+X，与 GNOME 已占用键位自动互斥；exclude_triggers 可点名排除（当前排除 ⌘U：Ctrl+U 在 GtkEntry/GtkText 里是「清空输入框」）。终端配置档不参与泛化（安全第一）。",
+    "启用": true,
+    "类别": [
+      "letter",
+      "letter-shift",
+      "digit-shift"
+    ],
+    "应用档": [
+      "通用"
+    ],
+    "排除条目": [
+      "tab-1",
+      "tab-2",
+      "tab-3",
+      "tab-4",
+      "tab-5",
+      "tab-6",
+      "tab-7",
+      "tab-8",
+      "tab-9"
+    ],
+    "排除触发键": [
+      "Super-u"
+    ]
+  }
+}

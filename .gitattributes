@@ -1,8 +1,10 @@
 * text=auto eol=lf
 
 *.sh      text eol=lf
-bin/mackey text eol=lf
-*.py      text eol=lf
+命令/mackey text eol=lf
+*.rs      text eol=lf
+*.toml    text eol=lf
+*.ts      text eol=lf
 *.js      text eol=lf
 *.mjs     text eol=lf
 *.json    text eol=lf

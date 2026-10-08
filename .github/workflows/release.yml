@@ -1,97 +1,122 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# SPDX-FileCopyrightText: 2026 Mackey contributors
 name: 发布
-
-# 推送形如 v1.0.0 的标签时：校验 → 测试 → 打包 → 上传到对应 Release。
-# 发布说明由上一个标签以来的提交自动生成。
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
-
 permissions:
-  contents: write
-
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  release:
-    name: 构建并发布
-    runs-on: ubuntu-latest
+  binary:
+    name: 检查与打包 ${{ matrix.arch }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: 安装 Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.14"
-
-      - name: 安装依赖
+          persist-credentials: false
+      - name: 准备 HOME 内的源码与开发依赖
         run: |
+          cp -a "$GITHUB_WORKSPACE" "$HOME/mackey-ci"
           sudo apt-get update
-          sudo apt-get install -y jq shellcheck zip
-
-      - name: 校验标签与版本一致
-        if: startsWith(github.ref, 'refs/tags/v')
+          sudo apt-get install -y jq shellcheck gjs dbus-x11 build-essential cmake
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+          rustup default stable
+          npm install -g typescript
+      - name: 校验发布标签与 Cargo 版本
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          tag_ver="${GITHUB_REF_NAME#v}"
-          file_ver="$(tr -d '[:space:]' < VERSION)"
-          if [ "$tag_ver" != "$file_ver" ]; then
-            echo "✗ 标签 $GITHUB_REF_NAME 与 VERSION（$file_ver）不一致" >&2
-            exit 1
-          fi
-
-      - name: 静态检查
-        run: make lint
-
-      - name: 生成/构建校验
-        run: make check
-
-      - name: 离线单元测试
-        run: make test
-
-      - name: 打包
+          cd "$HOME/mackey-ci"
+          cargo_ver="$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "mackey") | .version')"
+          if [[ "$RELEASE_REF" == refs/tags/* ]]; then test "$RELEASE_TAG" = "v$cargo_ver"; fi
+      - name: 统一检查与原生发行包
         run: |
-          ver="$(tr -d '[:space:]' < VERSION)"
-          mkdir -p dist
-          git archive --format=tar.gz --prefix="mackey-${ver}/" -o "dist/mackey-${ver}.tar.gz" HEAD
-          git archive --format=zip  --prefix="mackey-${ver}/" -o "dist/mackey-${ver}.zip" HEAD
-          (cd "extension/mackey-focus@kotonex" \
-             && zip -qr "../../dist/mackey-gnome-extension-${ver}.zip" .)
-          (cd dist && sha256sum ./* > "SHA256SUMS-${ver}.txt")
-          ls -l dist
-
-      - name: 上传到 Release
+          cd "$HOME/mackey-ci"
+          cargo run --quiet --locked -- 检查
+          cargo run --quiet --locked -- 打包
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mackey-linux-${{ matrix.arch }}
+          path: ~/mackey-ci/builddir/发行/*.tar.gz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: matrix.arch == 'x86_64'
+        with:
+          name: mackey-release-notes
+          path: ~/mackey-ci/builddir/发布说明.md
+          if-no-files-found: error
+  release:
+    name: 校验并发布附件
+    needs: binary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 准备发行目录
+        run: |
+          cp -a "$GITHUB_WORKSPACE" "$HOME/mackey-release"
+          mkdir -p "$HOME/mackey-release/builddir/发行"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: mackey-linux-*
+          path: ~/mackey-release/builddir/发行
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: mackey-release-notes
+          path: ~/mackey-release/builddir
+      - name: 打包源码与 GNOME 扩展、生成校验和
+        run: |
+          cd "$HOME/mackey-release"
+          ver="$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "mackey") | .version')"
+          test -f "builddir/发行/mackey-${ver}-linux-x86_64.tar.gz"
+          test -f "builddir/发行/mackey-${ver}-linux-aarch64.tar.gz"
+          git archive --format=tar.gz --prefix="mackey-${ver}/" -o "builddir/发行/mackey-${ver}-source.tar.gz" HEAD
+          (cd 扩展/mackey-focus@kotonex && zip -qr "../../builddir/发行/mackey-gnome-extension-${ver}.zip" .)
+          (cd builddir/发行 && sha256sum ./*.tar.gz ./*.zip > "SHA256SUMS-${ver}.txt")
+      - name: 按主分支归属发布 Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          # 发布说明：上一个标签到当前标签之间的提交（含提交信息全文）。
-          prev="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
-          if [ -n "$prev" ]; then
-            range="${prev}..${GITHUB_REF_NAME}"
+          cd "$HOME/mackey-release"
+          git show-ref --verify --quiet refs/remotes/origin/main
+          prerelease=true
+          latest=false
+          if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            prerelease=false
+            latest=true
+          fi
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" builddir/发行/* --clobber
+            gh release edit "$RELEASE_TAG" --notes-file builddir/发布说明.md
           else
-            range="${GITHUB_REF_NAME}"
+            gh release create "$RELEASE_TAG" builddir/发行/* --verify-tag --draft --prerelease --title "Mackey $RELEASE_TAG" --notes-file builddir/发布说明.md
           fi
-          {
-            git log --no-merges --reverse --pretty=format:'### %s%n%n%b' "$range"
-            if [ -n "$prev" ]; then
-              printf '\n\n**完整变更**：https://github.com/%s/compare/%s...%s\n' \
-                "$GITHUB_REPOSITORY" "$prev" "$GITHUB_REF_NAME"
-            fi
-          } > release-notes.md
-          # 重复运行先删除旧 Release，保证说明与附件始终对应当前标签。
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            gh release delete "${GITHUB_REF_NAME}" --yes
-          fi
-          gh release create "${GITHUB_REF_NAME}" dist/* \
-            --title "Mackey ${GITHUB_REF_NAME}" \
-            --notes-file release-notes.md
-
-      - name: 手动触发时保留构建产物
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        uses: actions/upload-artifact@v7
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease="$prerelease" --latest="$latest"
+      - uses: actions/upload-artifact@v7
         with:
-          name: mackey-${{ github.run_id }}
-          path: dist/*
+          name: mackey-release
+          path: ~/mackey-release/builddir/发行/*
+          if-no-files-found: error
