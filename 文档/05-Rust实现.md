@@ -82,3 +82,9 @@ Bash 只保留三个启动壳；GNOME 扩展、真实 GJS 契约和基类桩均�
 已发行的二进制和生成的 GNOME 扩展无需 TypeScript 编译器。
 
 项目稳定约定集中在 [项目规范](项目规范.md)。原生发行包包含 `发行信息.json`，双架构汇总校验提交、二进制摘要与嵌入扩展的一致性。公开附件禁止覆盖，草稿可重试。
+
+## 扩展版本
+
+扩展 `version-name` 从 Cargo 项目版本自动生成；构建输出的 metadata.json 与 TypeScript 产物一起嵌入，安装和扩展 ZIP 使用同一份字节。源码 metadata.json 仅保存静态信息，版本升级无需额外修改它。
+
+GNOME 的 `version` 是扩展网站管理的整数发布序号，不设置项目语义版本；用户可见版本使用 `version-name`，遵循 [GNOME 元数据规范](https://gjs.guide/extensions/overview/anatomy.html#version-name)。

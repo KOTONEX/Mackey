@@ -3,7 +3,5 @@
   "name": "Mackey 焦点桥",
   "description": "为 xremap 提供焦点窗口信息（独立实现 com.k0kubun.Xremap D-Bus 契约），修复其在 GNOME 45+ 上 application 匹配失效的问题。只读地查询焦点窗口，不注入按键、不监听键盘。",
   "shell-version": ["45", "46", "47", "48", "49", "50", "51", "52"],
-  "version": 1,
-  "version-name": "1.0.0",
   "url": "https://github.com/KOTONEX/Mackey"
 }

@@ -17,6 +17,7 @@ fn 构建() -> Result<(), Box<dyn std::error::Error>> {
         return Err("源码与编译输出必须位于 HOME 下".into());
     }
     for 文件 in [
+        "Cargo.toml",
         "tsconfig.json",
         "扩展",
         "测试/扩展契约.ts",
@@ -27,6 +28,29 @@ fn 构建() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("cargo:rerun-if-env-changed=HOME");
     println!("cargo:rerun-if-env-changed=PATH");
+    let 版本 = env::var("CARGO_PKG_VERSION")?;
+    if 版本.is_empty()
+        || 版本.len() > 16
+        || !版本
+            .bytes()
+            .all(|字节| 字节.is_ascii_alphanumeric() || b" .".contains(&字节))
+        || !版本.bytes().any(|字节| 字节.is_ascii_alphanumeric())
+    {
+        return Err(
+            "项目版本不符合 GNOME version-name 格式：1 至 16 个字母、数字、空格或点".into(),
+        );
+    }
+    let mut 元数据: serde_json::Value = serde_json::from_slice(&fs::read(
+        根.join("扩展/mackey-focus@kotonex/metadata.json"),
+    )?)?;
+    let 对象 = 元数据.as_object_mut().ok_or("扩展元数据必须是 JSON 对象")?;
+    // version 是 GNOME 扩展网站管理的整数；项目只设置用户可见版本。
+    对象.remove("version");
+    对象.insert("version-name".into(), 版本.into());
+    fs::write(
+        输出.join("metadata.json"),
+        serde_json::to_vec_pretty(&元数据)?,
+    )?;
     let 编译器 = env::split_paths(&env::var_os("PATH").unwrap_or_default())
         .map(|目录| 目录.join("tsc"))
         .find(|文件| {

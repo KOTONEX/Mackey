@@ -215,6 +215,11 @@ fn 单次原生安装收敛缺失字段和陈旧产物() {
         fs::read(扩展目录.join("extension.js")).unwrap(),
         mackey::扩展脚本
     );
+    let 元数据 = fs::read(扩展目录.join("metadata.json")).unwrap();
+    assert_eq!(元数据, mackey::扩展元数据);
+    let 元数据: Value = serde_json::from_slice(&元数据).unwrap();
+    assert_eq!(元数据["version-name"], mackey::版本);
+    assert!(元数据.get("version").is_none());
     let mut 文件: Vec<_> = fs::read_dir(&扩展目录)
         .unwrap()
         .map(|项| 项.unwrap().file_name())

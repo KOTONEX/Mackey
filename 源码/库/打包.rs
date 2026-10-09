@@ -201,10 +201,7 @@ fn 组装附件(根: &Path) -> Result<()> {
     let mut 归档 = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     for (名称, 内容) in [
         ("extension.js", crate::扩展脚本),
-        (
-            "metadata.json",
-            include_bytes!("../../扩展/mackey-focus@kotonex/metadata.json").as_slice(),
-        ),
+        ("metadata.json", crate::扩展元数据),
     ] {
         归档.start_file(
             名称,
@@ -375,6 +372,16 @@ mod 测试 {
             .read_to_string(&mut 文本)
             .unwrap();
         assert_eq!(文本.as_bytes(), crate::扩展脚本);
+        let mut 元数据 = Vec::new();
+        扩展包
+            .by_name("metadata.json")
+            .unwrap()
+            .read_to_end(&mut 元数据)
+            .unwrap();
+        assert_eq!(元数据, crate::扩展元数据);
+        let 元数据: Value = serde_json::from_slice(&元数据).unwrap();
+        assert_eq!(元数据["version-name"], crate::版本);
+        assert!(元数据.get("version").is_none());
         let mut 源码 = tar::Archive::new(flate2::read::GzDecoder::new(
             fs::File::open(发行.join(format!("mackey-{}-source.tar.gz", crate::版本))).unwrap(),
         ));
