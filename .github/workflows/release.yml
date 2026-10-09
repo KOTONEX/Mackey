@@ -105,10 +105,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           cd "$HOME/mackey-release"
-          git show-ref --verify --quiet refs/remotes/origin/main
+          git show-ref --verify --quiet refs/remotes/origin/主线
           prerelease=true
           latest=false
-          if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+          if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/主线; then
             prerelease=false
             latest=true
           fi
