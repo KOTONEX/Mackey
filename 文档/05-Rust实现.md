@@ -15,7 +15,7 @@ cargo 测试
 cargo 打包         # builddir/发行/ 中的二进制包与依赖许可文本
 ```
 
-只固定 Rust Edition 2024，不固定 Rust 版本号或工具链；构建需要支持该 Edition 的 Rust、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）。应用提交 `Cargo.lock` 并使用 `--locked`。
+Rust 工具链和 Edition 跟随最新稳定版升级，不固定为某个版本；构建需要支持该 Edition 的 Rust、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）。应用提交 `Cargo.lock` 并使用 `--locked`。
 发布工作流在 `ubuntu-latest` x86_64 与 `ubuntu-26.04-arm` aarch64 runner 上原生构建；产物使用各 runner 的系统 glibc，
 不声称是静态链接或兼容所有旧版发行版。
 

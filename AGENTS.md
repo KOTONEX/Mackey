@@ -90,9 +90,10 @@ cargo 运行 <子命令>       # 从源码构建并执行应用命令
 - 自有 API、配置键、命令、参数、文件名和目录采用简体中文，不保留英文命令别名。
 - Cargo、Git、GNOME、systemd、XDG、GJS 和 xremap 规定的名称、字段、原始许可文件及
   `mackey` 项目前缀保留原名。部署路径与外部协议文件名保留约定名称，见中文接口文档。
-- 工具链在可行时一律跟随最新稳定版：Rust 使用 `stable`（只固定 Edition 2024）、TypeScript 使用微软官方 GitHub 最新正式发行的原生编译器；不得改用 beta、nightly、next 或旧版本锁定。
+- 工具链在可行时一律跟随最新稳定版：Rust 使用 `stable`，TypeScript 使用微软官方 GitHub 最新正式发行的原生编译器；不得改用 beta、nightly、next 或旧版本锁定。
 - 系统开发工具使用 runner 稳定仓库的可用版本；GitHub Actions 采用官方最新稳定主版本标签。平台限制或兼容性确需例外时，必须在规范与工作流中写明原因。
 - 工具链不锁具体版本，CI 日志记录实际版本；应用依赖继续提交 `Cargo.lock` 并使用 `--locked`。
+- Rust Edition 跟随最新稳定版升级，不固定为某个 Edition。Cargo 的 `edition` 字段显式声明当前采用的稳定 Edition，不代表永久固定；新稳定 Edition 发布后完成迁移与验收再更新。不得删除该字段让 Cargo 回退到默认的 2015 Edition。
 - 应用版本唯一事实源为 Cargo.toml；Cargo.lock 纳入版本管理。
 - 完成改动必须运行 `cargo 检查`，同时报告未运行测试的具体原因。
 - 不手工维护 CHANGELOG.md；Git 提交标题与版本标签生成 builddir/CHANGELOG.md

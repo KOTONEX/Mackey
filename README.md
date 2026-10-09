@@ -196,7 +196,7 @@ CI 直接获取微软 GitHub 最新正式发行的原生 `tsc` 并校验 SHA-256
 
 ## 开发
 
-只固定 Rust Edition 2024，不固定 Rust 工具链版本号；应用版本以 `Cargo.toml` 为唯一事实源。
+Rust 工具链和 Edition 跟随最新稳定版升级，不设永久版本约束；应用版本以 `Cargo.toml` 为唯一事实源。
 
 ```bash
 cargo 检查                # 完整离线验收：静态检查、差分、Rust 与真实 GJS 契约

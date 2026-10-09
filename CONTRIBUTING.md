@@ -104,7 +104,7 @@ cargo 运行 生成 --文档 "$PWD/文档/03-行为清单.md"
 
 ## 版本与日志
 
-只固定 Rust Edition 2024，不固定 Rust 工具链版本号。应用版本只修改 Cargo.toml，
+Rust 工具链和 Edition 不设永久版本约束，跟随最新稳定版升级。应用版本只修改 Cargo.toml，
 提交 Cargo.lock。`cargo 运行 变更日志` 和 `cargo 运行 发布说明`
 根据完整 Git 历史及版本标签生成 builddir/ 下的文档；打包会自动收录，未提交修改不进入日志。
 自有接口及卸载重装说明见 [中文接口迁移](文档/07-中文接口迁移.md)。
@@ -131,7 +131,10 @@ Cargo 别名在源码仓库目录及其子目录可用；应用参数直接跟�
 
 ## 工具链版本
 
-工具链在可行时一律使用最新稳定版：Rust 为 `stable`，只固定 Edition 2024；
+工具链在可行时一律使用最新稳定版：Rust 为 `stable`，Edition 随最新稳定版升级；
 TypeScript 为微软官方 GitHub 最新正式发行的原生编译器。不使用 beta、nightly 或 next。系统开发工具使用 runner 稳定仓库中的可用版本，
 GitHub Actions 使用官方最新稳定主版本标签；因平台或兼容性必须固定旧版时，要在规范与工作流中说明原因。
 应用依赖的 `Cargo.lock` 与 `--locked` 保留，工具链频道与应用依赖锁定分别管理。
+
+`Cargo.toml` 的 `edition` 记录当前使用的稳定 Edition，新稳定 Edition 发布后完成迁移与验收再更新。
+该字段不支持 `latest`，省略会默认采用 2015，因此保留显式声明；详见 [Cargo 文档](https://doc.rust-lang.org/cargo/reference/manifest.html#the-edition-field)。

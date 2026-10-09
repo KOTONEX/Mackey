@@ -2,6 +2,7 @@
 [package]
 name = "mackey"
 version = "2.3.1"
+# 当前采用最新稳定 Edition；新 Edition 发布后通过迁移与验收升级。
 edition = "2024"
 publish = false
 license = "AGPL-3.0-or-later"
