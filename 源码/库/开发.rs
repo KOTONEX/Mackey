@@ -52,18 +52,31 @@ fn 校验() -> Result<()> {
 pub fn 测试() -> Result<()> {
     let 根 = 仓库()?;
     校验()?;
-    运行(&根, "cargo", &["build", "--locked"])?;
-    运行(&根, "cargo", &["test", "--locked", "--all-targets"])?;
+    let 宿主 = crate::验证::宿主()?;
+    运行(&根, "cargo", &["build", "--locked", "--target", &宿主])?;
+    运行(
+        &根,
+        "cargo",
+        &["test", "--locked", "--all-targets", "--target", &宿主],
+    )?;
     crate::验证::扩展(&根)?;
     println!("✓ Rust、差分与扩展契约测试通过");
     Ok(())
 }
 pub fn 端到端测试() -> Result<()> {
     let 根 = 仓库()?;
+    let 宿主 = crate::验证::宿主()?;
     运行(
         &根,
         "cargo",
-        &["build", "--locked", "--example", "虚拟键盘"],
+        &[
+            "build",
+            "--locked",
+            "--example",
+            "虚拟键盘",
+            "--target",
+            &宿主,
+        ],
     )?;
     let 路径 = 路径集合::发现()?;
     let 引擎 = crate::服务::查找引擎(&路径).context("没有 xremap 引擎，请先获取引擎")?;

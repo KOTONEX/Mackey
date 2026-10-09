@@ -232,9 +232,7 @@ pub fn 解析加速键列表(raw: &str) -> Vec<String> {
             } else if c == '\\' {
                 escape = true;
             } else if c == q {
-                if !当前键盘.is_empty() {
-                    values.push(std::mem::take(&mut 当前键盘));
-                }
+                values.push(std::mem::take(&mut 当前键盘));
                 quote = None;
             } else {
                 当前键盘.push(c);
@@ -660,11 +658,23 @@ pub fn 编译配置(c: &行为清单, user: &Value, p: &探测结果) -> Result<
         unplanned.is_empty(),
         "以下触发键与 GNOME 已占用键位冲突，但没有迁移计划: {unplanned:?}"
     );
-    let layout = user["修饰键布局"].as_str().unwrap_or("苹果");
+    let 自动布局;
+    let layout = match user["修饰键布局"].as_str().unwrap_or("苹果") {
+        "自动" => {
+            自动布局 = crate::键盘识别::当前键盘();
+            自动布局["建议布局"].as_str().context("缺少识别布局")?
+        }
+        布局 => 布局,
+    };
     let mut 配置 = json!({});
     match layout {
         "微软" => {
-            配置["modmap"] = json!([{"name":"pc-position-swap: 把 ⌘/⌥ 摆到 macOS 的物理位置", "remap":{"ALT_L":"SUPER_L","SUPER_L":"ALT_L","ALT_R":"SUPER_R","SUPER_R":"ALT_R"}}])
+            配置["modmap"] = json!([{"name":"pc-position-swap: 把 ⌘/⌥ 摆到 macOS 的物理位置", "remap":{"ALT_L":"SUPER_L","SUPER_L":"ALT_L","ALT_R":"SUPER_R","SUPER_R":"ALT_R"}}]);
+            if !字符串列表(&user["device"]["only"]).is_empty()
+                || !字符串列表(&user["device"]["not"]).is_empty()
+            {
+                配置["modmap"][0]["device"] = user["device"].clone();
+            }
         }
         "苹果" => {}
         _ => bail!("未知的修饰键布局: {layout}"),
@@ -1062,6 +1072,8 @@ mod 测试 {
         assert_eq!(解析加速键("<Control><Alt>Left").unwrap(), "C-A-LEFT");
         assert_eq!(转为加速键("S-SUPER-A"), "<Shift><Super>a");
         assert_eq!(解析加速键列表("@as []"), Vec::<String>::new());
+        let 值 = vec!["".to_owned(), "<Super>c".to_owned(), "'\\".to_owned()];
+        assert_eq!(解析加速键列表(&转为加速键列表(&值)), 值);
     }
     #[test]
     fn 迁移原生键位并检查冲突() {
@@ -1147,6 +1159,7 @@ mod 测试 {
                 .all(|m| m["device"]["only"][0] == "MX Keys")
         );
         assert_eq!(g.配置["modmap"][0]["remap"]["ALT_L"], "SUPER_L");
+        assert_eq!(g.配置["modmap"][0]["device"], json!({"only":["MX Keys"]}));
         assert!(
             截图目标(
                 &p.绑定表,

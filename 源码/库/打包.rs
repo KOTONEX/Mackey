@@ -89,6 +89,24 @@ pub fn 执行() -> Result<std::path::PathBuf> {
         构建目录.join(宿主).join("release/mackey"),
         包目录.join("mackey"),
     )?;
+    use sha2::{Digest, Sha256};
+    let 提交 = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(&根)
+        .output()?;
+    ensure!(提交.status.success(), "读取发行提交失败");
+    let 信息 = serde_json::json!({
+        "版本": crate::版本, "架构": 架构,
+        "提交": String::from_utf8(提交.stdout)?.trim(),
+        "扩展摘要": format!("{:x}", Sha256::digest(crate::扩展脚本)),
+        "二进制摘要": format!("{:x}", Sha256::digest(fs::read(包目录.join("mackey"))?))
+    });
+    原子写入(
+        &路径,
+        &包目录.join("发行信息.json"),
+        &serde_json::to_vec_pretty(&信息)?,
+        0o644,
+    )?;
     let 节点: BTreeSet<_> = 元信息["resolve"]["nodes"]
         .as_array()
         .context("缺少依赖图")?
@@ -152,10 +170,17 @@ fn 组装附件(根: &Path) -> Result<()> {
     let 路径 = 路径集合::发现()?;
     let 目录 = 路径.保护(&根.join("builddir/发行"))?;
     let mut 附件 = Vec::new();
+    let 提交 = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(根)
+        .output()?;
+    ensure!(提交.status.success(), "读取附件来源提交失败");
+    let 提交 = String::from_utf8(提交.stdout)?;
     for 架构 in ["x86_64", "aarch64"] {
         let 包 = 目录.join(format!("mackey-{}-linux-{架构}.tar.gz", crate::版本));
         ensure!(包.is_file(), "缺少 {}", 包.display());
-        crate::验证::检查归档架构(&包, 架构)?;
+        let 信息 = crate::验证::检查归档架构(&包, 架构)?;
+        ensure!(信息["提交"] == 提交.trim(), "发行包与源码归档的提交不一致");
         附件.push(包);
     }
     let 来源 = Command::new("git")
@@ -272,13 +297,15 @@ mod 测试 {
                 文件,
                 flate2::Compression::default(),
             ));
-            let mut 数据 = [0; 20];
+            let mut 数据 = vec![0; 20];
             数据[..4].copy_from_slice(b"\x7fELF");
             数据[4] = 2;
             数据[5] = 1;
+            数据[6] = 1;
+            数据.extend_from_slice(crate::扩展脚本);
             数据[18..20].copy_from_slice(&机器.to_le_bytes());
             let mut 头 = tar::Header::new_gnu();
-            头.set_size(20);
+            头.set_size(数据.len() as u64);
             头.set_mode(0o755);
             头.set_cksum();
             包.append_data(
@@ -287,9 +314,44 @@ mod 测试 {
                 &数据[..],
             )
             .unwrap();
+            let 提交 = Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .current_dir(根)
+                .output()
+                .unwrap();
+            let 信息 = serde_json::to_vec(&serde_json::json!({"版本":crate::版本,"架构":架构,"提交":String::from_utf8(提交.stdout).unwrap().trim(),"扩展摘要":format!("{:x}",Sha256::digest(crate::扩展脚本)),"二进制摘要":format!("{:x}",Sha256::digest(&数据))})).unwrap();
+            let mut 头 = tar::Header::new_gnu();
+            头.set_size(信息.len() as u64);
+            头.set_mode(0o644);
+            头.set_cksum();
+            包.append_data(
+                &mut 头,
+                format!("mackey-{}-linux-{架构}/发行信息.json", crate::版本),
+                &信息[..],
+            )
+            .unwrap();
             包.into_inner().unwrap().finish().unwrap();
         }
         组装附件(根).unwrap();
+        assert!(
+            Command::new("git")
+                .args([
+                    "-c",
+                    "user.name=测试",
+                    "-c",
+                    "user.email=test@example.invalid",
+                    "commit",
+                    "--quiet",
+                    "--allow-empty",
+                    "-m",
+                    "后续提交"
+                ])
+                .current_dir(根)
+                .status()
+                .unwrap()
+                .success()
+        );
+        assert!(组装附件(根).unwrap_err().to_string().contains("提交不一致"));
         let 清单 =
             fs::read_to_string(发行.join(format!("SHA256SUMS-{}.txt", crate::版本))).unwrap();
         assert_eq!(清单.lines().count(), 4);

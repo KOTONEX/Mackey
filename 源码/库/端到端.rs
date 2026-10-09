@@ -226,9 +226,9 @@ pub fn 执行(根: &Path, 引擎: &Path) -> Result<()> {
     let 临时 = tempfile::Builder::new()
         .prefix(".mackey-e2e-")
         .tempdir_in(&路径.主目录)?;
-    let 构建 = crate::验证::构建目录(根)?;
-    let 程序 = 构建.join("debug/mackey");
-    let 注入器 = 构建.join("debug/examples/虚拟键盘");
+    let 构建 = crate::验证::调试目录(根)?;
+    let 程序 = 构建.join("mackey");
+    let 注入器 = 构建.join("examples/虚拟键盘");
     let 应用 = if crate::焦点桥::验证焦点("自动").is_ok() {
         None
     } else {

@@ -7,10 +7,5 @@ if [[ "$(id -u)" == 0 ]]; then
     echo '不要用 root/sudo 运行：本工具不碰系统目录' >&2
     exit 1
 fi
-if [[ -x "$ROOT/target/debug/mackey" ]]; then
-    exec "$ROOT/target/debug/mackey" "$@"
-fi
-if [[ -x "$ROOT/target/release/mackey" ]]; then
-    exec "$ROOT/target/release/mackey" "$@"
-fi
+cd "$ROOT"
 exec cargo run --quiet --locked --manifest-path "$ROOT/Cargo.toml" --bin mackey -- "$@"

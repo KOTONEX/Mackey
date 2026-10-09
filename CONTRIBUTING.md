@@ -1,6 +1,8 @@
 # 贡献指南
 
-感谢参与 Mackey。这个项目面向「同时使用 macOS 与 Linux」的人，它的价值来自两条硬约束，
+完整约束集中在 [项目规范](文档/项目规范.md)。本文提供实际开发操作。
+
+这个项目面向「同时使用 macOS 与 Linux」的人，它的价值来自两条硬约束，
 所以对改动的要求比对一般项目更严格。
 
 ## 两条不可协商的约束
@@ -25,7 +27,7 @@
 |---|---|
 | Rust 稳定版 / Cargo / C 编译器 | 编译主程序、原生焦点桥、虚拟键盘测试 |
 | 原生 TypeScript 编译器（`tsc`）、ShellCheck | 扩展/契约/基类桩编译、严格类型与 Shell 静态检查 |
-| `jq` | 生成器报告解析、迁移计划 |
+| `jq` / `gh` | CI 工具准备与发布；本地业务生成器不依赖 jq |
 | `gjs` | 扩展契约自测 |
 | `gsettings` / `dbus-run-session` | 探测 GNOME 键位、D-Bus |
 | `xremap`（见下） | 端到端自测 |
@@ -54,10 +56,10 @@ cargo 运行 <子命令>       # 从源码构建并执行应用命令
 `配置/行为清单.json` 是行为的**唯一事实源**。新增/修改按键映射、冲突迁移、泛化兜底，
 都改这个 JSON，然后运行：
 ```bash
-cargo 运行 生成 --文档 "$PWD/文档/03-行为清单.md"
+cargo 运行 生成 --不探测 --用户配置 测试/基准/用户配置.json --输出目录 "$HOME/.cache/mackey-文档生成" --文档 "$PWD/文档/03-行为清单.md"
 ```
 
-清单嵌入二进制，修改后先运行 `cargo build --locked`；部署时重新 `mackey 安装`。生成命令会同时更新 `~/.config/mackey/xremap.json`、`relocations.json` 与 `文档/03-行为清单.md`。
+清单嵌入二进制，修改后先运行 `cargo build --locked`；部署时重新 `mackey 安装`。上述命令将配置写入 HOME 内临时目录，文档写入仓库，不覆盖当前运行配置。
 
 每条显式条目必须声明 `归属` 分类：`macos` = 本工具改写成 macOS 行为（`策略` 为 `translate`/`auto` 且 `目标组合` 非空）；
 `gnome` = 保持 GNOME 默认（放行、原生等价、可选、无法模拟）。生成器会硬校验 归属 与 `策略`/`目标组合` 是否一致，
@@ -129,12 +131,6 @@ CI 通过官方 `gh` 客户端读取 [微软 TypeScript 最新正式发行](http
 GitHub 官方 Actions 自身的内部运行时由平台管理，与本项目编译工具链分开。
 Cargo 别名在源码仓库目录及其子目录可用；应用参数直接跟在 `cargo 运行` 后，无需额外 `--`。
 
-## 工具链版本
+## 工具链与发行规则
 
-工具链在可行时一律使用最新稳定版：Rust 为 `stable`，Edition 随最新稳定版升级；
-TypeScript 为微软官方 GitHub 最新正式发行的原生编译器。不使用 beta、nightly 或 next。系统开发工具使用 runner 稳定仓库中的可用版本，
-GitHub Actions 使用官方最新稳定主版本标签；因平台或兼容性必须固定旧版时，要在规范与工作流中说明原因。
-应用依赖的 `Cargo.lock` 与 `--locked` 保留，工具链频道与应用依赖锁定分别管理。
-
-`Cargo.toml` 的 `edition` 记录当前使用的稳定 Edition，新稳定 Edition 发布后完成迁移与验收再更新。
-该字段不支持 `latest`，省略会默认采用 2015，因此保留显式声明；详见 [Cargo 文档](https://doc.rust-lang.org/cargo/reference/manifest.html#the-edition-field)。
+准备环境时核实最新稳定工具链，普通构建不自动升级系统。Edition、依赖锁文件、runner、正式/预发行判定和公开附件不可覆盖等规则统一见 [项目规范](文档/项目规范.md)。

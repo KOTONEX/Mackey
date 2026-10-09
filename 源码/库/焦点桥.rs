@@ -34,7 +34,6 @@ const 后端列表: [(&str, &str, &str, &str); 2] = [
 ];
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct 焦点信息 {
-    #[serde(default)]
     #[serde(rename = "wm_class")]
     pub 应用标识: String,
     #[serde(default)]
@@ -62,6 +61,7 @@ pub struct 焦点来源 {
     固定应用: String,
     缓存毫秒: u64,
     缓存: Option<(Instant, 焦点信息)>,
+    失效: bool,
 }
 impl 焦点来源 {
     pub fn 连接(preferred: &str, 缓存毫秒: u64, 固定应用: &str) -> Result<Self> {
@@ -71,6 +71,7 @@ impl 焦点来源 {
             固定应用: 固定应用.into(),
             缓存毫秒,
             缓存: None,
+            失效: false,
         };
         if preferred == "固定" {
             return Ok(src);
@@ -114,31 +115,28 @@ impl 焦点来源 {
             *iface,
         )?;
         let payload: String = proxy.call(*method, &())?;
-        let v: Value = serde_json::from_str(&payload)?;
-        ensure!(v.is_object(), "焦点响应必须为对象");
-        Ok(焦点信息 {
-            应用标识: v["wm_class"].as_str().unwrap_or("").to_owned(),
-            标题: v["title"].as_str().unwrap_or("").to_owned(),
-        })
+        serde_json::from_str(&payload)
+            .context("焦点响应必须包含字符串 wm_class，title 如有提供也必须是字符串")
     }
     pub fn 获取(&mut self) -> Result<焦点信息> {
+        ensure!(!self.失效, "焦点来源已失效");
         if let Some((time, info)) = &self.缓存
             && time.elapsed() < Duration::from_millis(self.缓存毫秒)
         {
             return Ok(info.clone());
         }
-        match self.查询() {
+        self.保存查询(self.查询())
+    }
+    fn 保存查询(&mut self, 结果: Result<焦点信息>) -> Result<焦点信息> {
+        match 结果 {
             Ok(info) => {
                 self.缓存 = Some((Instant::now(), info.clone()));
                 Ok(info)
             }
             Err(err) => {
-                if let Some((_, last)) = &self.缓存 {
-                    eprintln!("[focusd] 取焦点失败，沿用最后一次结果：{err}");
-                    Ok(last.clone())
-                } else {
-                    Err(err)
-                }
+                self.缓存 = None;
+                self.失效 = true;
+                Err(err)
             }
         }
     }
@@ -182,6 +180,7 @@ fn 处理请求(mut stream: UnixStream, source: &Mutex<焦点来源>) -> Result<
     let request: Value = serde_json::from_str(line.trim())?;
     let mut locked = source.lock().map_err(|_| anyhow::anyhow!("焦点锁损坏"))?;
     let value = 响应(&request, &mut locked)?;
+    drop(locked);
     writeln!(stream, "{}", serde_json::to_string(&value)?)?;
     Ok(())
 }
@@ -244,6 +243,13 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
     let 运行中 = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     eprintln!("[focusd] 监听 {}（后端 {}）", path.display(), options.后端);
     while !stop.load(Ordering::Relaxed) {
+        ensure!(
+            !source
+                .lock()
+                .map_err(|_| anyhow::anyhow!("焦点锁损坏"))?
+                .失效,
+            "焦点来源失效，停止焦点桥以停用依赖的键位引擎"
+        );
         match listener.accept() {
             Ok((stream, _)) => {
                 if 运行中.load(Ordering::Relaxed) >= 32 {
@@ -283,6 +289,23 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
 #[cfg(test)]
 mod 测试 {
     use super::*;
+    #[test]
+    fn 来源失效清缓存且拒绝旧焦点() {
+        let mut 来源 = 焦点来源::连接("固定", 40, "终端").unwrap();
+        来源.获取().unwrap();
+        assert!(来源.缓存.is_some());
+        assert!(来源.保存查询(Err(anyhow::anyhow!("来源消失"))).is_err());
+        assert!(来源.缓存.is_none());
+        assert!(来源.获取().is_err());
+        for 值 in [
+            json!({}),
+            json!({"wm_class":3}),
+            json!({"wm_class":"终端","title":null}),
+        ] {
+            assert!(serde_json::from_value::<焦点信息>(值).is_err());
+        }
+        assert!(serde_json::from_value::<焦点信息>(json!({"wm_class":""})).is_ok());
+    }
     #[test]
     fn 验证套接字协议与非法命令() {
         let mut source = 焦点来源::连接("固定", 40, "org.gnome.Terminal").unwrap();

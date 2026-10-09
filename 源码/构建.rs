@@ -35,11 +35,18 @@ fn 构建() -> Result<(), Box<dyn std::error::Error>> {
         })
         .ok_or("缺少原生 TypeScript 编译器 tsc，请将其目录加入 PATH")?;
     let mut 标识 = [0; 4];
+    println!(
+        "cargo:rerun-if-changed={}",
+        fs::canonicalize(&编译器)?.display()
+    );
     fs::File::open(&编译器)?.read_exact(&mut 标识)?;
     if 标识 != *b"\x7fELF" {
         return Err("tsc 必须是 Linux 原生编译器，不能使用脚本启动器".into());
     }
     let 产物 = 输出.join("类型脚本");
+    if 产物.exists() {
+        fs::remove_dir_all(&产物)?;
+    }
     let 状态 = Command::new(&编译器)
         .arg("-p")
         .arg(根.join("tsconfig.json"))

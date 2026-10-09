@@ -34,6 +34,16 @@ fn 用户服务命令(args: &[&str]) -> Result<Output> {
     all.extend(args);
     执行并检查("systemctl", &all)
 }
+fn 停用已有服务() -> Result<()> {
+    // 先停引擎，避免焦点桥先退出时旧引擎仍处理按键。
+    for 服务 in 服务列表.into_iter().rev() {
+        let 状态 = 用户服务命令(&["show", "--property=LoadState", "--value", 服务])?;
+        if String::from_utf8_lossy(&状态.stdout).trim() != "not-found" {
+            用户服务命令(&["disable", "--now", 服务])?;
+        }
+    }
+    Ok(())
+}
 pub fn 运行中(服务: &str) -> bool {
     执行命令("systemctl", &["--user", "is-active", "--quiet", 服务])
         .is_ok_and(|o| o.status.success())
@@ -122,6 +132,9 @@ pub fn 查找引擎(路径: &路径集合) -> Option<PathBuf> {
     candidates.into_iter().flatten().find(|p| 可执行(p))
 }
 pub fn 转义systemd参数(s: &str) -> Result<String> {
+    Ok(转义systemd环境(s)?.replace('$', "$$"))
+}
+fn 转义systemd环境(s: &str) -> Result<String> {
     ensure!(
         !s.contains(['\n', '\r', '\0']),
         "systemd 参数包含换行 / NUL"
@@ -131,7 +144,6 @@ pub fn 转义systemd参数(s: &str) -> Result<String> {
         s.replace('\\', "\\\\")
             .replace('"', "\\\"")
             .replace('%', "%%")
-            .replace('$', "$$")
     ))
 }
 fn 移除文件(路径: &路径集合, path: &Path) -> Result<()> {
@@ -170,13 +182,13 @@ fn 移除套接字(路径: &路径集合) -> Result<()> {
     Ok(())
 }
 pub fn 写入引擎服务(路径: &路径集合) -> Result<bool> {
+    let user = crate::用户配置::读取(&路径.配置.join("config.json"))?;
     let unit = 路径.服务目录.join(服务列表[1]);
     let Some(引擎下载) = 查找引擎(路径) else {
         移除文件(路径, &unit)?;
         eprintln!("! 没找到 xremap，跳过引擎服务；请运行 mackey 获取引擎");
         return Ok(false);
     };
-    let user = 读取结构数据(&路径.配置.join("config.json")).unwrap_or(json!({}));
     let mut exec = 转义systemd参数(引擎下载.to_str().context("引擎路径不是 UTF-8")?)?;
     for device in 字符串列表(&user["device"]["only"]) {
         exec += &format!(" --device {}", 转义systemd参数(&device)?);
@@ -191,7 +203,11 @@ pub fn 写入引擎服务(路径: &路径集合) -> Result<bool> {
                 .context("配置路径不是 UTF-8")?
         )?
     );
-    原子写入(路径,&unit,format!("[Unit]\nDescription=Mackey 键位引擎（xremap）\nAfter=mackey-focusd.service\nRequires=mackey-focusd.service\n\n[Service]\nType=simple\nEnvironment=GNOME_SOCKET=%t/mackey-focus.sock\nExecStart={exec}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
+    let 环境 = 转义systemd环境(&format!(
+        "GNOME_SOCKET={}",
+        路径.套接字.to_str().context("套接字路径不是 UTF-8")?
+    ))?;
+    原子写入(路径,&unit,format!("[Unit]\nDescription=Mackey 键位引擎（xremap）\nAfter=mackey-focusd.service\nRequires=mackey-focusd.service\nBindsTo=mackey-focusd.service\n\n[Service]\nType=simple\nEnvironment={环境}\nExecStart={exec}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
     Ok(true)
 }
 fn 移除扩展登记(uuid: &str) -> Result<()> {
@@ -233,12 +249,7 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
         eprintln!("! 引擎下载失败，继续安装扩展与服务：{err:#}");
     }
     if !保持运行 {
-        for 服务 in 服务列表 {
-            let 状态 = 用户服务命令(&["show", "--property=LoadState", "--value", 服务])?;
-            if String::from_utf8_lossy(&状态.stdout).trim() != "not-found" {
-                用户服务命令(&["disable", "--now", 服务])?;
-            }
-        }
+        停用已有服务()?;
         let _ = 用户服务命令(&["reset-failed", 服务列表[0], 服务列表[1]]);
         for 服务 in 服务列表 {
             移除文件(路径, &路径.服务目录.join("default.target.wants").join(服务))?;
@@ -266,7 +277,8 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
         原子写入(路径, &binary, &fs::read(当前键盘)?, 0o755)?;
     }
     let exec = 转义systemd参数(binary.to_str().context("二进制路径不是 UTF-8")?)?;
-    原子写入(路径,&路径.服务目录.join(服务列表[0]),format!("[Unit]\nDescription=Mackey 焦点上报桥\n\n[Service]\nType=simple\nExecStart={exec} 焦点桥 --套接字 %t/mackey-focus.sock\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
+    let 套接字 = 转义systemd参数(路径.套接字.to_str().context("套接字路径不是 UTF-8")?)?;
+    原子写入(路径,&路径.服务目录.join(服务列表[0]),format!("[Unit]\nDescription=Mackey 焦点上报桥\n\n[Service]\nType=simple\nExecStart={exec} 焦点桥 --套接字 {套接字}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
     写入引擎服务(路径)?;
     用户服务命令(&["daemon-reload"])?;
     let parent = 路径.命令入口.parent().context("入口没有父目录")?;
@@ -291,6 +303,32 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
     );
     Ok(())
 }
+fn 校验备份(值: &serde_json::Value) -> Result<Vec<(&str, &str, Vec<String>)>> {
+    let 对象 = 值.as_object().context("备份必须是 JSON 对象")?;
+    对象
+        .iter()
+        .map(|(标识, 值)| {
+            let (模式, 键名) = 标识.split_once(' ').context("备份绑定标识无效")?;
+            ensure!(
+                !模式.is_empty()
+                    && !键名.is_empty()
+                    && !模式.chars().any(char::is_whitespace)
+                    && !键名.chars().any(char::is_whitespace),
+                "备份绑定标识无效：{标识}"
+            );
+            let 值 = 值.as_array().context("备份键位必须是字符串数组")?;
+            let 值 = 值
+                .iter()
+                .map(|项| {
+                    项.as_str()
+                        .map(str::to_owned)
+                        .context("备份键位必须是字符串数组")
+                })
+                .collect::<Result<Vec<_>>>()?;
+            Ok((模式, 键名, 值))
+        })
+        .collect()
+}
 pub fn 还原(路径: &路径集合) -> Result<()> {
     let 备份 = 路径.备份();
     if !备份.exists() {
@@ -298,15 +336,13 @@ pub fn 还原(路径: &路径集合) -> Result<()> {
         return Ok(());
     }
     let old = 读取结构数据(&备份)?;
-    let old = old.as_object().context("备份必须是 JSON 对象")?;
+    let old = 校验备份(&old)?;
     let mut failed = Vec::new();
-    for (ident, accels) in old {
-        let (schema, key) = ident.split_once(' ').context("备份绑定标识无效")?;
-        if let Err(err) = 执行并检查(
-            "gsettings",
-            &["set", schema, key, &转为加速键列表(&字符串列表(accels))],
-        ) {
-            failed.push(format!("{ident}: {err}"));
+    for (schema, key, accels) in old {
+        if let Err(err) =
+            执行并检查("gsettings", &["set", schema, key, &转为加速键列表(&accels)])
+        {
+            failed.push(format!("{schema} {key}: {err}"));
         }
     }
     ensure!(
@@ -343,18 +379,34 @@ pub fn 应用(路径: &路径集合, 确认执行: bool) -> Result<()> {
         } else {
             json!({})
         };
+        校验备份(&old)?;
         let map = old.as_object_mut().context("备份必须为对象")?;
         for r in &generated.迁移计划 {
             map.entry(format!("{} {}", r.模式, r.键名))
                 .or_insert(json!(r.原值));
         }
         写入结构数据(路径, &备份, &old)?;
-        for r in &generated.迁移计划 {
-            执行并检查(
+        for (编号, r) in generated.迁移计划.iter().enumerate() {
+            if let Err(错误) = 执行并检查(
                 "gsettings",
                 &["set", &r.模式, &r.键名, &转为加速键列表(&r.新值)],
-            )
-            .context("GNOME 键位迁移失败；可用 mackey 还原 还原")?;
+            ) {
+                let mut 恢复失败 = Vec::new();
+                // 只回滚本次尝试的键，不能用最早备份覆盖用户后来做的改动。
+                for 已改 in generated.迁移计划[..=编号].iter().rev() {
+                    if let Err(恢复错误) = 执行并检查(
+                        "gsettings",
+                        &["set", &已改.模式, &已改.键名, &转为加速键列表(&已改.原值)],
+                    ) {
+                        恢复失败.push(format!("{} {}：{恢复错误}", 已改.模式, 已改.键名));
+                    }
+                }
+                bail!(
+                    "GNOME 键位迁移失败：{错误}；本次回滚失败 {} 条：{}；备份保留，可运行 mackey 还原",
+                    恢复失败.len(),
+                    恢复失败.join("、")
+                );
+            }
         }
     }
     // 运行中的 xremap 可能已加载旧配置。
@@ -362,7 +414,7 @@ pub fn 应用(路径: &路径集合, 确认执行: bool) -> Result<()> {
     启用(路径)
 }
 pub fn 停用() -> Result<()> {
-    用户服务命令(&["disable", "--now", 服务列表[0], 服务列表[1]])?;
+    停用已有服务()?;
     println!("✓ 服务已停用（键盘恢复 Linux 原生行为）");
     Ok(())
 }
@@ -374,6 +426,7 @@ fn 具有输入组() -> bool {
     })
 }
 pub fn 启用(路径: &路径集合) -> Result<()> {
+    crate::用户配置::读取(&路径.配置.join("config.json"))?;
     let _ = 执行命令("gnome-extensions", &["enable", 扩展标识]);
     if let Err(err) = crate::焦点桥::验证焦点("自动") {
         let _ = 停用();
@@ -440,7 +493,7 @@ pub fn 体检(路径: &路径集合) -> Result<()> {
     状态(路径);
     let mut problems = Vec::new();
     if 检查桌面().is_err() {
-        problems.push("当前会话不是 GNOME Wayland".to_owned());
+        problems.push("当前会话不是 GNOME".to_owned());
     }
     if !具有输入组() {
         problems.push("当前会话没有 input 组；添加组后需重新登录".into());
@@ -469,6 +522,7 @@ pub fn 体检(路径: &路径集合) -> Result<()> {
         eprintln!("! {problem}");
     }
     println!("{} 项待处理", problems.len());
+    ensure!(problems.is_empty(), "体检未通过");
     Ok(())
 }
 pub fn 卸载(
@@ -506,7 +560,10 @@ pub fn 卸载(
         确认("卸载会停用服务、还原键位、删除扩展与引擎，继续？", 确认执行)?,
         "已取消"
     );
-    用户服务命令(&["disable", "--now", 服务列表[0], 服务列表[1]])?;
+    if 路径.备份().exists() {
+        校验备份(&读取结构数据(&路径.备份())?)?;
+    }
+    停用已有服务()?;
     for 服务 in 服务列表 {
         移除文件(路径, &路径.服务目录.join(服务))?;
         移除文件(路径, &路径.服务目录.join("default.target.wants").join(服务))?;

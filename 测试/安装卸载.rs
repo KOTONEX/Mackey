@@ -25,7 +25,7 @@ impl 沙箱 {
         fs::create_dir_all(&主目录).unwrap();
         let 桩目录 = 临时.path().join("stubs");
         fs::create_dir(&桩目录).unwrap();
-        for 名称 in ["systemctl", "gsettings", "gnome-extensions"] {
+        for 名称 in ["systemctl", "gsettings", "gnome-extensions", "cargo"] {
             symlink(桩, 桩目录.join(名称)).unwrap();
         }
         Self { 临时, 主目录 }
@@ -54,8 +54,14 @@ impl 沙箱 {
             .env("MACKEY_DOCS", self.路径("文档/行为清单.md"))
             .env("XDG_CURRENT_DESKTOP", "GNOME")
             .env("XDG_SESSION_TYPE", "wayland")
+            .env(
+                "DBUS_SESSION_BUS_ADDRESS",
+                "unix:path=/nonexistent/mackey-test",
+            )
             .env("MACKEY_TEST_LOG", self.临时.path().join("调用.jsonl"))
             .env("MACKEY_TEST_SEED", self.临时.path().join("种子.json"))
+            .env("MACKEY_TEST_BINARY", 程序)
+            .env_remove("MACKEY_TEST_FAIL_ONCE")
             .env_remove("MACKEY_ENGINE")
             .env_remove("MACKEY_TEST_FAIL_RESTORE")
             .env_remove("MACKEY_YES");
@@ -151,7 +157,14 @@ fn 所有安装入口预检失败时零写入() {
             assert!(!输出.status.success());
             assert!(String::from_utf8_lossy(&输出.stderr).contains(提示));
             assert!(快照(&沙箱.主目录).is_empty());
-            assert!(沙箱.调用().is_empty());
+            let 调用 = 沙箱.调用();
+            assert!(调用.iter().all(|调用| 调用["程序"] == "cargo"));
+            if 入口 == "脚本" {
+                assert_eq!(调用.len(), 1);
+                let 参数 = 调用[0]["参数"].as_array().unwrap();
+                assert!(参数.contains(&json!("--locked")));
+                assert!(参数.contains(&json!("--manifest-path")));
+            }
         }
     }
 }
@@ -427,4 +440,143 @@ fn 会话类型环境变量不触发安装拦截() {
         String::from_utf8_lossy(&输出.stderr)
     );
     assert!(沙箱.路径(".config/mackey/config.json").exists());
+}
+
+#[test]
+fn 不完整安装可停用及重复卸载() {
+    for 有单元 in [false, true] {
+        let 沙箱 = 沙箱::新建();
+        if 有单元 {
+            写入(
+                沙箱.路径(".config/systemd/user/mackey-focusd.service"),
+                "旧单元",
+            );
+        }
+        沙箱.执行(&["停用"]);
+        沙箱.执行(&["卸载", "--确认执行"]);
+        沙箱.执行(&["卸载", "--确认执行"]);
+        assert!(沙箱.调用().iter().all(|调用| {
+            调用["参数"].as_array().is_none_or(|参数| {
+                !参数.contains(&json!("mackey-engine.service")) || !参数.contains(&json!("disable"))
+            })
+        }));
+    }
+}
+#[test]
+fn 无效备份还原及卸载均在操作前失败() {
+    for 操作 in [vec!["还原"], vec!["卸载", "--确认执行"]] {
+        let 沙箱 = 沙箱::新建();
+        写入(沙箱.路径(".config/mackey/backup/gsettings.json"), json!({"org.gnome.desktop.wm.keybindings switch-applications":[""],"org.gnome.desktop.wm.keybindings switch-windows":[42]}).to_string());
+        let 原貌 = 快照(&沙箱.主目录);
+        let 输出 = 沙箱.命令().args(操作).output().unwrap();
+        assert!(!输出.status.success());
+        assert_eq!(快照(&沙箱.主目录), 原貌);
+        assert!(沙箱.调用().is_empty());
+    }
+}
+#[test]
+fn 体检失败返回非零且不启用服务() {
+    let 沙箱 = 沙箱::新建();
+    let 输出 = 沙箱
+        .命令()
+        .arg("体检")
+        .env(
+            "DBUS_SESSION_BUS_ADDRESS",
+            "unix:path=/nonexistent/mackey-test",
+        )
+        .output()
+        .unwrap();
+    assert!(!输出.status.success());
+    assert!(String::from_utf8_lossy(&输出.stderr).contains("体检未通过"));
+    assert!(
+        沙箱
+            .调用()
+            .iter()
+            .all(|调用| !调用["参数"].as_array().unwrap().contains(&json!("enable")))
+    );
+}
+#[test]
+fn 自动生成保留配置且微软设备范围进入修饰映射() {
+    let 沙箱 = 沙箱::新建();
+    let 配置 = 沙箱.路径(".config/mackey/config.json");
+    let 原文 =
+        json!({"修饰键布局":"自动","device":{"only":["测试键盘"],"not":"排除键盘"}}).to_string();
+    写入(&配置, &原文);
+    沙箱.执行(&["生成", "--不探测", "--不生成文档"]);
+    assert_eq!(fs::read_to_string(&配置).unwrap(), 原文);
+    写入(&配置, 原文.replace("自动", "微软"));
+    沙箱.执行(&["生成", "--不探测", "--不生成文档"]);
+    let 生成: Value =
+        serde_json::from_slice(&fs::read(沙箱.路径(".config/mackey/xremap.json")).unwrap())
+            .unwrap();
+    assert_eq!(
+        生成["modmap"][0]["device"],
+        json!({"only":["测试键盘"],"not":"排除键盘"})
+    );
+}
+#[test]
+fn 自定义套接字写入两个服务且保留环境美元符号() {
+    let 沙箱 = 沙箱::新建();
+    let 运行目录 = 沙箱.路径("运行 $值%\"路径");
+    fs::create_dir_all(&运行目录).unwrap();
+    let 输出 = 沙箱
+        .命令()
+        .args(["安装", "--不下载"])
+        .env("XDG_RUNTIME_DIR", &运行目录)
+        .output()
+        .unwrap();
+    assert!(
+        输出.status.success(),
+        "{}",
+        String::from_utf8_lossy(&输出.stderr)
+    );
+    let 焦点 = fs::read_to_string(沙箱.路径(".config/systemd/user/mackey-focusd.service")).unwrap();
+    let 引擎 = 沙箱.路径(".local/share/mackey/bin/xremap");
+    写入(&引擎, "测试");
+    fs::set_permissions(&引擎, fs::Permissions::from_mode(0o755)).unwrap();
+    沙箱
+        .命令()
+        .args(["安装", "--不下载", "--保持运行"])
+        .env("XDG_RUNTIME_DIR", &运行目录)
+        .output()
+        .unwrap();
+    let 引擎 = fs::read_to_string(沙箱.路径(".config/systemd/user/mackey-engine.service")).unwrap();
+    assert!(焦点.contains("$$值%%"));
+    assert!(引擎.contains("$值%%"));
+    assert!(!引擎.contains("$$值"));
+    assert!(引擎.contains("BindsTo=mackey-focusd.service"));
+}
+#[test]
+fn 迁移失败回滚本次原值并保留最早备份() {
+    let 沙箱 = 沙箱::新建();
+    写入(
+        沙箱.路径(".config/mackey/config.json"),
+        r#"{"修饰键布局":"苹果"}"#,
+    );
+    let 种子路径 = 沙箱.临时.path().join("种子.json");
+    let 当前 = json!({"org.gnome.shell.keybindings toggle-application-view":"['<Super>a']","org.gnome.shell.keybindings toggle-message-tray":"['<Super>v']"});
+    写入(&种子路径, 当前.to_string());
+    let 备份 = 沙箱.路径(".config/mackey/backup/gsettings.json");
+    let 最早 =
+        json!({"org.gnome.shell.keybindings toggle-application-view":["<Alt>F1"]}).to_string();
+    写入(&备份, &最早);
+    let 输出 = 沙箱
+        .命令()
+        .args(["应用", "--确认执行"])
+        .env("MACKEY_TEST_FAIL_ONCE", 沙箱.临时.path().join("已失败"))
+        .output()
+        .unwrap();
+    assert!(!输出.status.success());
+    assert!(
+        String::from_utf8_lossy(&输出.stderr).contains("本次回滚失败 0 条"),
+        "{}",
+        String::from_utf8_lossy(&输出.stderr)
+    );
+    let 最终值: Value = serde_json::from_slice(&fs::read(&种子路径).unwrap()).unwrap();
+    assert_eq!(当前, 最终值);
+    let 保留备份: Value = serde_json::from_slice(&fs::read(备份).unwrap()).unwrap();
+    assert_eq!(
+        保留备份["org.gnome.shell.keybindings toggle-application-view"],
+        json!(["<Alt>F1"])
+    );
 }

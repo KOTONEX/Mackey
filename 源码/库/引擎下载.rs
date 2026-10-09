@@ -101,6 +101,10 @@ pub fn 提取引擎(bytes: &[u8], 架构: &str) -> Result<Vec<u8>> {
         "aarch64" => 183,
         _ => bail!("未知 ELF 架构"),
     };
+    ensure!(
+        数据.get(4) == Some(&2) && 数据.get(5) == Some(&1) && 数据.get(6) == Some(&1),
+        "引擎必须是 64 位小端 ELF，版本为 1"
+    );
     ensure!(二进制架构(&数据)? == want, "ELF 架构不匹配，期望 {架构}");
     Ok(数据)
 }
@@ -257,7 +261,9 @@ mod 测试 {
     fn 测试程序内容(machine: u16) -> Vec<u8> {
         let mut b = vec![0; 64];
         b[..4].copy_from_slice(b"\x7fELF");
+        b[4] = 2;
         b[5] = 1;
+        b[6] = 1;
         b[18..20].copy_from_slice(&machine.to_le_bytes());
         b
     }
@@ -282,6 +288,11 @@ mod 测试 {
         assert!(提取引擎(&测试压缩包("../xremap", &测试程序内容(62)), "x86_64").is_err());
         assert!(提取引擎(&测试压缩包("xremap", &测试程序内容(183)), "x86_64").is_err());
         assert!(提取引擎(&测试压缩包("xremap", b"not an ELF"), "x86_64").is_err());
+        for (位置, 非法值) in [(4, 1), (5, 2), (6, 0)] {
+            let mut 数据 = 测试程序内容(62);
+            数据[位置] = 非法值;
+            assert!(提取引擎(&测试压缩包("xremap", &数据), "x86_64").is_err());
+        }
         let mut be = 测试程序内容(62);
         be[5] = 2;
         be[18..20].copy_from_slice(&183u16.to_be_bytes());

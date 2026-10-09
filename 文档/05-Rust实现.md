@@ -23,8 +23,8 @@ CI 的 Rust 使用 `stable`；TypeScript 通过官方 `gh` 客户端获取微软
 Linux 架构包，校验发行资产 SHA-256 后将原生 `tsc` 加入 PATH。编译器不锁定具体版本，
 CI 记录实际版本；本地和 CI 构建均无需 Node.js/npm。
 
-源码入口优先使用已存在的 debug 二进制，其次 release；两者不存在时用 Cargo 构建。
-修改源码后运行 `cargo build --locked`，或直接 `cargo 运行 <子命令>`。
+源码入口始终通过 Cargo 构建当前源码，遵循当前构建目录配置，不使用陈旧二进制。
+可直接 `cargo 运行 <子命令>`。
 部署 release 时可直接执行 `target/release/mackey 安装`。
 
 ## 配置与部署
@@ -80,3 +80,5 @@ Bash 只保留三个启动壳；GNOME 扩展、真实 GJS 契约和基类桩均�
 构建需要 原生 TypeScript 编译器（`tsc`），`源码/构建.rs` 在 HOME 内的 Cargo OUT_DIR 生成资源。
 安装、扩展契约和发布附件引用相同的嵌入字节，安装目录与扩展 ZIP 不包含 TypeScript 源码。
 已发行的二进制和生成的 GNOME 扩展无需 TypeScript 编译器。
+
+项目稳定约定集中在 [项目规范](项目规范.md)。原生发行包包含 `发行信息.json`，双架构汇总校验提交、二进制摘要与嵌入扩展的一致性。公开附件禁止覆盖，草稿可重试。

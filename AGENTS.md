@@ -1,125 +1,33 @@
-# AGENTS.md
+# Mackey 代理入口
 
-给自动化代理（含 AI 编码助手）的项目说明。人类贡献者请看 [CONTRIBUTING.md](CONTRIBUTING.md)。
+先读 [项目规范](文档/项目规范.md)，按其中的业务、写入、工具链和交付边界执行。
+使用说明见 [README](README.md)，开发操作见 [贡献指南](CONTRIBUTING.md)。
 
-## 项目一句话
+## 稳定约束
 
-在 GNOME（Wayland）上把 macOS 的 ⌘/⌥ 组合翻译成当前应用在 Linux 下的等价按键。
-引擎是 xremap（evdev→uinput），按应用分流时经 socket 询问 `mackey 焦点桥`，
-焦点来自 GNOME 扩展 `mackey-focus@kotonex` 的 D-Bus。
+- 行为唯一事实源为 `配置/行为清单.json`，保留终端/IDE Ctrl+C；不全局交换 Ctrl/Super。
+- 所有持久写入与测试临时目录在 HOME，经过 `源码/库/路径.rs`；拒绝 root/sudo。唯一 IPC 例外 `/run/user/$UID/mackey-focus.sock`（0600）；设备测试仅显式使用 `/dev/uinput`。
+- 自有接口与文档采用中文，保留外部规定的标识。旧接口拒绝并提示卸载重装；AGPL-3.0-or-later 保持。
+- 工具链跟随最新稳定版，不锁数字；Edition 随稳定版迁移验收更新，Cargo.lock 保留。原生 ELF tsc 编译 TS，项目与 CI 不引入 Node/npm。
+- 只有属于远程 main 历史的标签提交可正式发布，其余预发行且非 Latest；不覆盖公开附件或移动公开标签。
+- 当前已授权正常提交/推送 rust、自主标签，推送 main 须批准。审查不得自动安装或打断当前键盘服务。
+- 支持 GNOME Wayland；X11 不支持仅写文档，不增加检测或拦截。
 
-## 目录
+## 事实位置
 
-```
-Cargo.toml / Cargo.lock            Rust 应用与依赖锁文件
-源码/程序/主程序.rs                       主命令（clap）
-源码/库/{配置生成,焦点桥,引擎下载}.rs     生成器、zbus 焦点桥、HTTPS 引擎下载
-源码/库/{服务,路径,键盘识别}.rs    服务、HOME/XDG 边界、键盘识别
-命令/mackey                        源码树 Shell 入口（无运行时逻辑）
-配置/行为清单.json             行为唯一事实源（编译时嵌入）
-扩展/mackey-focus@kotonex/    GNOME 扩展（TypeScript，编译生成 JS 后嵌入）
-测试/虚拟键盘.rs          Rust uinput 虚拟键盘（测试专用）
-测试/命令行.rs                     二进制/socket 集成测试
-测试/基准/                   Python 旧版输出的差分基准
-测试/安装卸载.rs、命令桩.rs          原生安装/卸载隔离测试与外部命令桩
-源码/库/{验证,端到端,打包}.rs         真实扩展契约、虚拟键盘测试、原生归档与校验和
-.github/workflows/                Rust CI 与 x86_64/aarch64 发布
-```
+| 内容 | 位置 |
+| --- | --- |
+| 版本、依赖与 Edition | Cargo.toml、Cargo.lock |
+| CLI、业务与路径边界 | 源码/程序/主程序.rs、源码/库/ |
+| 行为与生成文档 | 配置/行为清单.json、文档/03-行为清单.md |
+| TypeScript 及嵌入构建 | 扩展/、测试/、类型声明/、源码/构建.rs |
+| 独立安装、还原与运行契约 | 测试/安装卸载.rs、测试/命令行.rs、测试/扩展契约.ts |
+| CI、发行与编译器准备 | .github/workflows/、.github/actions/原生编译器/action.yml |
+| 许可全文与登记 | LICENSE、文档/04-第三方许可证.md、文档/06-Rust依赖许可证.tsv |
 
-## 硬约束（改代码时必须遵守）
+## 验证命令
 
-1. 持久文件不写 `$HOME` 之外；不调用 `sudo`；拒绝以 root 运行。
-   新的写入点必须走 `源码/库/路径.rs` 的 `保护`。
-2. 不做 Ctrl/⌘ 全局交换；只接管 `配置/行为清单.json` 列出的键
-   （`吞控制组合` 是清单内的点状替换，实现为独立 keymap + `application.not`，
-   例外必须包含终端配置档与 `例外应用`，否则会毁掉 SIGINT 与内嵌终端）；
-   与 GNOME 冲突时迁移功能（改 dconf 前备份、卸载还原），而不是删除功能。
-
-上述目录和权限约束适用于 Mackey 运行、安装、卸载与本地测试。GitHub 托管的临时 CI runner
-可安装系统开发依赖；Mackey 和测试仍以普通用户运行，源码副本与产物位于 runner 的 HOME 内。
-
-## 常用命令
-
-```bash
-cargo 检查                # 完整离线验收：静态检查、差分、Rust 与真实 GJS 契约
-cargo 测试                # 差分、Rust、隔离安装卸载与真实 GJS 契约
-cargo 测试 --端到端       # 额外运行虚拟键盘测试，需要设备权限
-cargo 格式化              # 格式化 Rust 源码
-cargo 打包                # 构建本机发行包并验证解压后的独立二进制
-cargo 运行 <子命令>       # 从源码构建并执行应用命令
-```
-
-离线环境或没有 GNOME 会话时：用 `cargo 测试` 验证生成器；
-`cargo 检查` 不依赖会话。`cargo 测试 --端到端` 额外使用虚拟键盘，需要 `input` 组读设备和 uinput 写权限。
-
-## 行为改动流程
-
-1. 只改 `配置/行为清单.json`（映射、冲突迁移、泛化兜底规则）。
-   每条显式条目必须声明 `归属`（`macos` = 本工具改写；`gnome` = 保持 GNOME 默认），
-   生成器会校验 归属 与 `策略`/`目标组合` 一致，不一致直接报错。
-2. 修改嵌入资源后重新编译并安装二进制；运行 `cargo 运行 生成 --文档 "$PWD/文档/03-行为清单.md"`，它会重写 `xremap.json`、`relocations.json` 与 `文档/03-行为清单.md`。
-3. 不要手工编辑 `文档/03-行为清单.md`。
-
-## 已知环境前提
-
-- 命令行入口由 `mackey 安装` 生成在 `${XDG_BIN_HOME:-~/.local/bin}/mackey`（指向独立 Rust 二进制）；
-  该目录需位于 PATH 中。仓库内的等价入口是 `./命令/mackey`。
-- 引擎默认装在 `${XDG_DATA_HOME:-~/.local/share}/mackey/bin/xremap`（`获取引擎` 下载）；
-  `查找引擎` 的查找顺序是：`MACKEY_ENGINE` → 配置里的 `引擎` → 上述路径 → 仓库 `.vendor/xremap` → `PATH`。
-- 新装 GNOME 扩展在 Wayland 下**必须重新登录**才会被 shell 扫描到；
-  在此之前 `gnome-extensions info` 会显示「不存在」，`mackey 焦点桥 --测试` 会失败。
-  这是设计上的保护：焦点来源不可用时 `mackey 启用` 会拒绝启动引擎，
-  以免终端里的 ⌘C 退化成 Ctrl+C（SIGINT）。
-- `input` 组是读 `/dev/input` 的唯一前提；加入后同样需要重新登录本会话。
-- `/dev/uinput` 需要可写（合成按键）；部分发行版已预置 udev 规则。
-
-## 提交
-
-提交信息使用中文类型前缀（`新增:` / `修复:` / `文档:` / `测试:` / `重构:` / `杂务:` / `初始化:`，
-见 [CONTRIBUTING.md](CONTRIBUTING.md)）；提交前跑 `cargo 检查`。
-
-## 用户运行时 IPC 例外
-
-原有 xremap 协议使用 `/run/user/$UID/mackey-focus.sock`；允许在该固定位置创建权限 0600 的
-瞬时 Unix socket，不创建系统目录。自定义 socket 与所有测试临时文件必须在 HOME 下。
-测试专用 `测试/虚拟键盘.rs` 只向 `/dev/uinput` 写事件，不安装 udev 规则。
-
-## 项目规范与中文接口
-
-- 规范参照 AdwCode；保留 Mackey 的 AGPL-3.0-or-later，不引入其他项目的许可或自动安装行为。
-- 自有 API、配置键、命令、参数、文件名和目录采用简体中文，不保留英文命令别名。
-- Cargo、Git、GNOME、systemd、XDG、GJS 和 xremap 规定的名称、字段、原始许可文件及
-  `mackey` 项目前缀保留原名。部署路径与外部协议文件名保留约定名称，见中文接口文档。
-- 工具链在可行时一律跟随最新稳定版：Rust 使用 `stable`，TypeScript 使用微软官方 GitHub 最新正式发行的原生编译器；不得改用 beta、nightly、next 或旧版本锁定。
-- 系统开发工具使用 runner 稳定仓库的可用版本；GitHub Actions 采用官方最新稳定主版本标签。平台限制或兼容性确需例外时，必须在规范与工作流中写明原因。
-- 工具链不锁具体版本，CI 日志记录实际版本；应用依赖继续提交 `Cargo.lock` 并使用 `--locked`。
-- Rust Edition 跟随最新稳定版升级，不固定为某个 Edition。Cargo 的 `edition` 字段显式声明当前采用的稳定 Edition，不代表永久固定；新稳定 Edition 发布后完成迁移与验收再更新。不得删除该字段让 Cargo 回退到默认的 2015 Edition。
-- 应用版本唯一事实源为 Cargo.toml；Cargo.lock 纳入版本管理。
-- 完成改动必须运行 `cargo 检查`，同时报告未运行测试的具体原因。
-- 不手工维护 CHANGELOG.md；Git 提交标题与版本标签生成 builddir/CHANGELOG.md
-  和 builddir/发布说明.md。CI 需要完整检出历史和标签，未提交的改动不会进入日志。
-- 提交、推送、打标签与发布分别按用户授权执行，不自行修改全局 Git 身份。
-
-## 发行渠道与接口变更
-
-- 只有已提交到 `main` 的代码可以发布正式发行版。发布工作流以标签提交是否属于远程 `main` 历史为准；其余分支、提交或标签一律标记为预发行（Prerelease），不得标记 Latest。
-- 不保留旧版自有命令、配置键或布局值的兼容读取，不自动升级旧配置。检测到旧配置应停止，并引导用户先在旧版本运行卸载脚本、还原键位并清除配置，再安装新版。
-- 布局值使用 `苹果`、`微软`、`自动`。按键行为以清单为准。
-
-- 安装脚本仅作原生命令启动壳；安装/卸载选项和预检由 Rust 统一实现。卸载默认清配置，`--保留配置` 显式保留。
-- X11 不支持范围仅在文档说明；不得新增 X11 会话检测、拦截或运行时警告。GNOME 桌面预检保留。
-
-## TypeScript 构建
-
-- 所有自有 GJS 代码以 `.ts` 维护，包括扩展、契约测试和基类桩；不得提交手写或生成的 JS 副本。
-- Cargo 的 `源码/构建.rs` 调用严格模式 `tsc`，产物位于 HOME 下的 Cargo OUT_DIR；构建使用原生 TypeScript 编译器，不依赖 Node.js 或 npm。
-- 安装的 `extension.js`、真实 GJS 测试和扩展 ZIP 必须使用同一次编译嵌入的产物。ZIP 仅含 `extension.js` 和 `metadata.json`。
-- 缺少编译器或类型错误必须中止构建，不得回退到旧产物；运行发行二进制不依赖 tsc。
-
-## 开发入口
-
-- `.cargo/config.toml` 统一提供 `cargo 检查`、`cargo 测试`、`cargo 打包`、`cargo 格式化` 和 `cargo 运行 <子命令>`；别名始终通过 Cargo 构建当前源码，不依赖已安装的 Mackey。
-- `cargo 检查` 包含静态检查和全部离线测试；`cargo 测试` 包含差分、Rust 与真实 GJS 契约，`--端到端` 显式加跑设备测试。
-- Cargo 构建只接受 Linux 原生 ELF `tsc`；本地构建、发行程序和 CI 构建均不引入 Node.js/npm 工具链或 npm 依赖。CI 用官方 `gh` 客户端获取微软 GitHub 最新正式发行的架构包，校验官方 SHA-256 后将原生编译器加入 PATH。
-- CI 的编译器位于 HOME 内临时工具目录，不提交工具版本锁文件；GitHub 官方 Actions 自身的执行环境由平台管理，不作为本项目的 Node 依赖。
-- GitHub 工作流的 x86_64 与发布汇总任务使用 `ubuntu-latest`；ARM64 使用最新可用的官方 Ubuntu ARM 标签，目前为 `ubuntu-26.04-arm`，不虚构 `ubuntu-latest-arm` 标签。
+- `cargo 检查`：格式、静态/类型检查、ShellCheck、JSON、115 差分、全部离线 Rust 与真实 GJS/D-Bus 契约。
+- `cargo 打包`：宿主包、原始许可证、发行信息与独立解压执行验证。
+- `cargo 测试 --端到端`：按需设备测试；没有授权停全局引擎时保留现有服务，报告未运行。
+- 改工作流运行 actionlint，改文档核验本地链接；交付从干净副本构建。实际准备版本、测试、打包、推送和公开发布分别报告。

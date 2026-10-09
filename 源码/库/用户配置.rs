@@ -27,6 +27,22 @@ pub fn 校验(配置: Value) -> Result<Value> {
     if let Some(值) = 对象.get("引擎") {
         ensure!(值.is_string(), "引擎路径必须是字符串");
     }
+    if let Some(设备) = 对象.get("device") {
+        let 设备 = 设备
+            .as_object()
+            .ok_or_else(|| anyhow::anyhow!("device 必须是对象"))?;
+        for 键 in ["only", "not"] {
+            if let Some(值) = 设备.get(键) {
+                ensure!(
+                    值.is_string()
+                        || 值
+                            .as_array()
+                            .is_some_and(|列表| 列表.iter().all(Value::is_string)),
+                    "device.{键} 必须是字符串或字符串数组"
+                );
+            }
+        }
+    }
     Ok(配置)
 }
 pub fn 读取(文件: &Path) -> Result<Value> {
@@ -36,6 +52,17 @@ pub fn 读取(文件: &Path) -> Result<Value> {
 mod 测试 {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn 拒绝可能丢失设备范围的无效过滤器() {
+        for 配置 in [
+            json!({"device":null}),
+            json!({"device":{"only":["键盘",42]}}),
+            json!({"device":{"not":true}}),
+        ] {
+            assert!(校验(配置).is_err());
+        }
+        assert!(校验(json!({"device":{"only":"键盘","not":[]}})).is_ok());
+    }
     #[test]
     fn 仅接受新接口且保留外部字段() {
         let 配置 =

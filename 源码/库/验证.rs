@@ -18,6 +18,17 @@ pub fn 构建目录(根: &Path) -> Result<PathBuf> {
         数据["target_directory"].as_str().context("缺少构建目录")?,
     ))
 }
+pub fn 宿主() -> Result<String> {
+    let 输出 = Command::new("rustc").arg("-vV").output()?;
+    ensure!(输出.status.success(), "读取 rustc 宿主失败");
+    String::from_utf8(输出.stdout)?
+        .lines()
+        .find_map(|行| 行.strip_prefix("host: ").map(str::to_owned))
+        .context("缺少 rustc host")
+}
+pub fn 调试目录(根: &Path) -> Result<PathBuf> {
+    Ok(构建目录(根)?.join(宿主()?).join("debug"))
+}
 pub fn 扩展(根: &Path) -> Result<()> {
     let 路径 = 路径集合::发现()?;
     let 临时 = tempfile::Builder::new()
@@ -49,7 +60,7 @@ pub fn 扩展(根: &Path) -> Result<()> {
     )?;
     let 契约 = 临时.path().join("扩展契约.js");
     原子写入(&路径, &契约, crate::扩展契约脚本, 0o644)?;
-    let 程序 = 构建目录(根)?.join("debug/mackey");
+    let 程序 = 调试目录(根)?.join("mackey");
     let 状态 = Command::new("dbus-run-session")
         .args(["--", "gjs", "-m"])
         .arg(契约)
@@ -81,28 +92,83 @@ fn 解包(包: &Path, 目标: &Path) -> Result<()> {
     }
     Ok(())
 }
-pub fn 检查归档架构(包: &Path, 架构: &str) -> Result<()> {
+pub fn 检查归档架构(包: &Path, 架构: &str) -> Result<serde_json::Value> {
+    use sha2::{Digest, Sha256};
+    use std::collections::BTreeSet;
+    ensure!(matches!(架构, "x86_64" | "aarch64"), "未知发行架构");
     let mut 归档 = tar::Archive::new(flate2::read::GzDecoder::new(fs::File::open(包)?));
-    let 目标 = PathBuf::from(format!("mackey-{}-linux-{架构}/mackey", crate::版本));
+    let 根 = PathBuf::from(format!("mackey-{}-linux-{架构}", crate::版本));
+    let mut 名称集合 = BTreeSet::new();
+    let mut 二进制 = None;
+    let mut 信息 = None;
     for 项 in 归档.entries()? {
         let mut 项 = 项?;
-        if 项.path()? == 目标 {
-            let mut 头 = [0; 20];
-            项.read_exact(&mut 头)?;
-            let 机器 = if 架构 == "x86_64" { 62 } else { 183 };
-            ensure!(
-                &头[..4] == b"\x7fELF"
-                    && 头[4] == 2
-                    && 头[5] == 1
-                    && u16::from_le_bytes([头[18], 头[19]]) == 机器,
-                "发行包 ELF 架构与名称不符"
-            );
-            return Ok(());
+        let 名称 = 项.path()?.into_owned();
+        ensure!(
+            名称
+                .components()
+                .all(|项| matches!(项, Component::Normal(_)))
+                && 名称.starts_with(&根),
+            "归档包含不安全路径或不符的根目录"
+        );
+        ensure!(名称集合.insert(名称.clone()), "归档包含重复路径");
+        ensure!(
+            项.header().entry_type().is_file() || 项.header().entry_type().is_dir(),
+            "归档包含特殊条目"
+        );
+        if 名称 == 根.join("mackey") || 名称 == 根.join("发行信息.json") {
+            ensure!(项.header().entry_type().is_file(), "发行文件必须是普通文件");
+            let 上限 = if 名称 == 根.join("mackey") {
+                256 * 1024 * 1024
+            } else {
+                65536
+            };
+            ensure!(项.size() <= 上限, "发行文件超过大小限制");
+            let mut 数据 = Vec::new();
+            项.read_to_end(&mut 数据)?;
+            if 名称 == 根.join("mackey") {
+                二进制 = Some(数据);
+            } else {
+                信息 = Some(serde_json::from_slice::<serde_json::Value>(&数据)?);
+            }
         }
     }
-    anyhow::bail!("归档中缺少目标二进制：{}", 目标.display())
+    let 数据 = 二进制.context("归档中缺少目标二进制")?;
+    let 信息 = 信息.context("归档中缺少发行信息")?;
+    let 机器 = if 架构 == "x86_64" { 62 } else { 183 };
+    ensure!(
+        数据.len() >= 20
+            && &数据[..4] == b"\x7fELF"
+            && 数据[4] == 2
+            && 数据[5] == 1
+            && 数据[6] == 1
+            && u16::from_le_bytes([数据[18], 数据[19]]) == 机器,
+        "发行包 ELF 架构与名称不符"
+    );
+    ensure!(
+        信息["版本"] == crate::版本
+            && 信息["架构"] == 架构
+            && 信息["提交"].as_str().is_some_and(
+                |提交| 提交.len() == 40 && 提交.bytes().all(|字节| 字节.is_ascii_hexdigit())
+            ),
+        "发行信息版本、架构或提交无效"
+    );
+    ensure!(
+        信息["二进制摘要"] == format!("{:x}", Sha256::digest(&数据)),
+        "发行二进制摘要不符"
+    );
+    ensure!(
+        信息["扩展摘要"] == format!("{:x}", Sha256::digest(crate::扩展脚本))
+            && 数据
+                .windows(crate::扩展脚本.len())
+                .any(|片段| 片段 == crate::扩展脚本),
+        "发行包嵌入扩展与当前构建不一致"
+    );
+    Ok(信息)
 }
 pub fn 发行包(根: &Path, 包: &Path) -> Result<()> {
+    let 架构 = crate::引擎下载::识别架构(std::env::consts::ARCH)?;
+    检查归档架构(包, 架构)?;
     let 路径 = 路径集合::发现()?;
     let 临时 = tempfile::Builder::new()
         .prefix(".mackey-发行验证-")
@@ -110,8 +176,6 @@ pub fn 发行包(根: &Path, 包: &Path) -> Result<()> {
     let 解压 = 临时.path().join("解压");
     fs::create_dir(&解压)?;
     解包(包, &解压)?;
-    let 架构 = crate::引擎下载::识别架构(std::env::consts::ARCH)?;
-    检查归档架构(包, 架构)?;
     let 目录 = 解压.join(format!("mackey-{}-linux-{架构}", crate::版本));
     for 文件 in [
         "LICENSE",

@@ -175,6 +175,9 @@ fn 发送事件(file: &mut std::fs::File, kind: u16, code: u16, value: i32) -> R
     file.write_all(bytes)?;
     Ok(())
 }
+fn 校验时长(秒数: f64) -> Result<Duration> {
+    Duration::try_from_secs_f64(秒数).context("延迟必须为可表示的有限非负秒数")
+}
 fn 执行() -> Result<()> {
     let args = 虚拟键盘参数::parse();
     ensure!(unsafe { libc::geteuid() } != 0, "不要用 root/sudo 运行");
@@ -182,13 +185,8 @@ fn 执行() -> Result<()> {
         args.名称.len() < 80 && !args.名称.contains('\0'),
         "设备名太长或包含 NUL"
     );
-    ensure!(
-        args.间隔秒数.is_finite()
-            && args.间隔秒数 >= 0.0
-            && args.存活秒数.is_finite()
-            && args.存活秒数 >= 0.0,
-        "延迟必须为有限非负数"
-    );
+    let 间隔 = 校验时长(args.间隔秒数)?;
+    let 存活 = 校验时长(args.存活秒数)?;
     let events = 解析事件(&args.事件)?;
     // 显式的测试设备 I/O；安装过程不会调用。
     let file = OpenOptions::new().write(true).open("/dev/uinput")?;
@@ -234,11 +232,11 @@ fn 执行() -> Result<()> {
     for (code, value) in events {
         发送事件(&mut device.0, 1, code, value)?;
         发送事件(&mut device.0, 0, 0, 0)?;
-        std::thread::sleep(Duration::from_secs_f64(args.间隔秒数));
+        std::thread::sleep(间隔);
     }
     println!("SENT");
     io::stdout().flush()?;
-    std::thread::sleep(Duration::from_secs_f64(args.存活秒数));
+    std::thread::sleep(存活);
     Ok(())
 }
 fn main() {
@@ -250,6 +248,13 @@ fn main() {
 #[cfg(test)]
 mod 测试 {
     use super::*;
+    #[test]
+    fn 延迟拒绝无效和溢出值() {
+        for 值 in [f64::NAN, f64::INFINITY, -1.0, 1e300] {
+            assert!(校验时长(值).is_err());
+        }
+        assert_eq!(校验时长(1.5).unwrap(), Duration::from_millis(1500));
+    }
     #[test]
     fn 验证键码与内核布局() {
         assert_eq!(
