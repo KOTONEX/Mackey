@@ -1,3 +1,6 @@
+# Jujutsu 本地工作区元数据
+.jj/
+
 # xremap 引擎二进制：由使用者自行获取（cargo install 或从发布页下载），不入库
 .vendor/
 

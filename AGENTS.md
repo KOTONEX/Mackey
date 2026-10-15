@@ -5,6 +5,7 @@
 
 ## 稳定约束
 
+- 日常版本控制使用 Jujutsu（`jj`），采用共置 Git 后端；先检查 `jj status` 与 `jj diff`。`主线` 书签跟踪远程同名分支，提交后用 `jj git push --bookmark 主线` 推送；Git 保留供 CI、标签、日志和归档使用。操作步骤见贡献指南。
 - 行为唯一事实源为 `配置/行为清单.json`，保留终端/IDE Ctrl+C；不全局交换 Ctrl/Super。
 - 所有持久写入与测试临时目录在 HOME，经过 `源码/库/路径.rs`；拒绝 root/sudo。唯一 IPC 例外 `/run/user/$UID/mackey-focus.sock`（0600）；设备测试仅显式使用 `/dev/uinput`。
 - 自有接口与文档采用中文，保留外部规定的标识。旧接口拒绝并提示卸载重装；AGPL-3.0-or-later 保持。

@@ -25,6 +25,7 @@
 
 | 依赖 | 用途 |
 |---|---|
+| Jujutsu（`jj`）/ Git | 本地版本管理、GitHub 互操作、发行日志与源码归档 |
 | Rust 稳定版 / Cargo / C 编译器 | 编译主程序、原生焦点桥、虚拟键盘测试 |
 | 原生 TypeScript 编译器（`tsc`）、ShellCheck | 扩展/契约/基类桩编译、严格类型与 Shell 静态检查 |
 | `jq` / `gh` | CI 工具准备与发布；本地业务生成器不依赖 jq |
@@ -39,6 +40,45 @@
 cargo install xremap --features gnome
 # 或把发布页下载的二进制放到仓库的 .vendor/xremap（该目录已被 .gitignore 忽略）
 ```
+
+## 版本控制
+
+日常使用 Jujutsu，采用[官方共置模式](https://docs.jj-vcs.dev/latest/git-compatibility/)，
+保留 Git 后端以兼容 GitHub、CI 和发行归档。获取新副本：
+
+```bash
+jj git clone --colocate https://github.com/KOTONEX/Mackey.git Mackey
+cd Mackey
+```
+
+已有 Git 副本只需在仓库根目录初始化一次，再跟踪 `主线`：
+
+```bash
+jj git init --colocate
+jj bookmark track '"主线"@origin'
+```
+
+确认 `jj config get user.name` 和 `jj config get user.email` 为自己的提交身份；
+缺失时用 `jj config set --repo user.name "你的名字"` 和对应的 `user.email` 设置仓库级身份。
+
+日常操作如下。Jujutsu 自动快照工作副本，没有 `git add` 步骤；存在无关改动时先隔离。
+
+```bash
+jj status
+jj diff
+jj git fetch --remote origin
+# 编辑文件并完成检查
+cargo 检查
+jj commit -m "文档: 说明本次修改"
+jj show -r @-
+jj bookmark set 主线 -r @-
+jj git push --remote origin --bookmark 主线
+```
+
+`jj commit` 后当前 `@` 是新的空工作副本，完成的提交在 `@-`；
+核对内容后再移动书签。若远程已有新提交，先处理同步与冲突，不强推覆盖公开历史。
+交付前确认 `jj status` 无工作副本差异、`主线` 与 Git `HEAD` 指向同一完成提交。
+现有 Cargo 命令、GitHub 工作流、Git 标签及源码归档接口保持兼容。
 
 ## 常用命令
 

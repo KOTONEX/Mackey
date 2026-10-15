@@ -201,6 +201,9 @@ CI 直接获取微软 GitHub 最新正式发行的原生 `tsc` 并校验 SHA-256
 
 ## 开发
 
+日常版本控制使用 Jujutsu（`jj`），`主线` 书签对应 GitHub 同名分支；
+采用共置 Git 后端，操作步骤见[贡献指南](CONTRIBUTING.md#版本控制)。
+
 Rust 工具链和 Edition 跟随最新稳定版升级，不设永久版本约束；应用版本以 `Cargo.toml` 为唯一事实源。
 
 ```bash
