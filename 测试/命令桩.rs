@@ -7,6 +7,29 @@ fn 执行() -> anyhow::Result<()> {
     let 入口 = 参数.next().unwrap_or_default();
     let 名称 = Path::new(&入口).file_name().unwrap_or_default();
     let 参数: Vec<_> = 参数.collect();
+    if 参数.first().map(String::as_str) == Some("焦点就绪探针") {
+        use std::io::{BufRead, BufReader};
+        let mut 流 = std::os::unix::net::UnixStream::connect(env::var_os("GNOME_SOCKET").unwrap())?;
+        流.set_read_timeout(Some(std::time::Duration::from_secs(1)))?;
+        writeln!(流, "\"ActiveWindow\"")?;
+        let mut 行 = String::new();
+        BufReader::new(流).read_line(&mut 行)?;
+        let 焦点: mackey::焦点桥::焦点信息 = serde_json::from_str(&行)?;
+        anyhow::ensure!(
+            焦点.应用标识 == "mackey-test-ready",
+            "引擎启动时焦点桥未就绪"
+        );
+        let 路径 = mackey::路径::路径集合::发现()?;
+        let 记录 = 路径.保护(Path::new(&参数[1]))?;
+        writeln!(
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(记录)?,
+            "就绪"
+        )?;
+        return Ok(());
+    }
     if 参数.first().map(String::as_str) == Some("动作探针") {
         let 路径 = mackey::路径::路径集合::发现()?;
         let 文件 = 参数

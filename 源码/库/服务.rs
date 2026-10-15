@@ -35,12 +35,16 @@ fn 用户服务命令(args: &[&str]) -> Result<Output> {
     执行并检查("systemctl", &all)
 }
 fn 停用已有服务() -> Result<()> {
-    // 先停引擎，避免焦点桥先退出时旧引擎仍处理按键。
+    // 同一事务停用两者，避免焦点桥仍存活时重新拉起引擎；After 保证引擎先停。
+    let mut 参数 = vec!["disable", "--now"];
     for 服务 in 服务列表.into_iter().rev() {
         let 状态 = 用户服务命令(&["show", "--property=LoadState", "--value", 服务])?;
         if String::from_utf8_lossy(&状态.stdout).trim() != "not-found" {
-            用户服务命令(&["disable", "--now", 服务])?;
+            参数.push(服务);
         }
+    }
+    if 参数.len() > 2 {
+        用户服务命令(&参数)?;
     }
     Ok(())
 }
@@ -273,7 +277,7 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
     }
     let exec = 转义systemd参数(binary.to_str().context("二进制路径不是 UTF-8")?)?;
     let 套接字 = 转义systemd参数(路径.套接字.to_str().context("套接字路径不是 UTF-8")?)?;
-    原子写入(路径,&路径.服务目录.join(服务列表[0]),format!("[Unit]\nDescription=Mackey 焦点上报桥\n\n[Service]\nType=simple\nExecStart={exec} 焦点桥 --套接字 {套接字}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
+    原子写入(路径,&路径.服务目录.join(服务列表[0]),format!("[Unit]\nDescription=Mackey 焦点上报桥\nStartLimitIntervalSec=0\n\n[Service]\nType=notify\nNotifyAccess=main\nExecStartPost=systemctl --user --no-block start mackey-engine.service\nExecStart={exec} 焦点桥 --套接字 {套接字}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
     写入引擎服务(路径)?;
     用户服务命令(&["daemon-reload"])?;
     let parent = 路径.命令入口.parent().context("入口没有父目录")?;

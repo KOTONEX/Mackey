@@ -9,7 +9,7 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     os::unix::{
         fs::{FileTypeExt, MetadataExt, PermissionsExt},
-        net::{UnixListener, UnixStream},
+        net::{SocketAddr, UnixDatagram, UnixListener, UnixStream},
     },
     path::PathBuf,
     sync::{
@@ -195,6 +195,24 @@ impl Drop for 套接字清理 {
         }
     }
 }
+fn 通知就绪(地址: Option<&std::ffi::OsStr>) -> Result<()> {
+    use std::os::{linux::net::SocketAddrExt, unix::ffi::OsStrExt};
+    let Some(地址) = 地址 else { return Ok(()) };
+    let 字节 = 地址.as_bytes();
+    let 目标 = if let Some(名称) = 字节.strip_prefix(b"@") {
+        SocketAddr::from_abstract_name(名称)?
+    } else {
+        ensure!(
+            字节.starts_with(b"/"),
+            "systemd 通知地址必须是绝对路径或抽象套接字"
+        );
+        SocketAddr::from_pathname(地址)?
+    };
+    UnixDatagram::unbound()?
+        .send_to_addr(b"READY=1", &目标)
+        .context("向 systemd 上报焦点桥就绪")?;
+    Ok(())
+}
 pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
     if options.列出后端 {
         for (name, path, iface, method) in 后端列表 {
@@ -242,6 +260,8 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
     let source = Arc::new(Mutex::new(source));
     let 运行中 = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     eprintln!("[focusd] 监听 {}（后端 {}）", path.display(), options.后端);
+    // 来源已验证、套接字已监听且权限已收紧后，才放行依赖的键位引擎。
+    通知就绪(std::env::var_os("NOTIFY_SOCKET").as_deref())?;
     while !stop.load(Ordering::Relaxed) {
         ensure!(
             !source
@@ -289,6 +309,29 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
 #[cfg(test)]
 mod 测试 {
     use super::*;
+    #[test]
+    fn 就绪通知支持文件和抽象套接字且无通知环境时可独立运行() {
+        use std::os::linux::net::SocketAddrExt;
+        通知就绪(None).unwrap();
+        let 临时 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 文件 = 临时.path().join("notify.sock");
+        let 接收 = UnixDatagram::bind(&文件).unwrap();
+        接收.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+        通知就绪(Some(文件.as_os_str())).unwrap();
+        let mut 消息 = [0; 32];
+        let 长度 = 接收.recv(&mut 消息).unwrap();
+        assert_eq!(&消息[..长度], b"READY=1");
+        let 名称 = format!("mackey-test-notify-{}", std::process::id());
+        let 接收 =
+            UnixDatagram::bind_addr(&SocketAddr::from_abstract_name(名称.as_bytes()).unwrap())
+                .unwrap();
+        接收.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+        通知就绪(Some(std::ffi::OsStr::new(&format!("@{名称}")))).unwrap();
+        let 长度 = 接收.recv(&mut 消息).unwrap();
+        assert_eq!(&消息[..长度], b"READY=1");
+        assert!(通知就绪(Some(std::ffi::OsStr::new("相对路径"))).is_err());
+        assert!(通知就绪(Some(临时.path().join("不存在.sock").as_os_str())).is_err());
+    }
     #[test]
     fn 来源失效清缓存且拒绝旧焦点() {
         let mut 来源 = 焦点来源::连接("固定", 40, "终端").unwrap();

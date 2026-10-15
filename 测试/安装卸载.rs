@@ -448,6 +448,28 @@ fn 会话类型环境变量不触发安装拦截() {
 }
 
 #[test]
+fn 完整安装在同一事务中停用引擎和焦点桥() {
+    let 沙箱 = 沙箱::新建();
+    沙箱.安装();
+    沙箱.执行(&["停用"]);
+    let 禁用: Vec<_> = 沙箱
+        .调用()
+        .into_iter()
+        .filter(|调用| 调用["程序"] == "systemctl" && 调用["参数"][1] == "disable")
+        .collect();
+    assert_eq!(禁用.len(), 1);
+    assert_eq!(
+        禁用[0]["参数"],
+        json!([
+            "--user",
+            "disable",
+            "--now",
+            "mackey-engine.service",
+            "mackey-focusd.service"
+        ])
+    );
+}
+#[test]
 fn 不完整安装可停用及重复卸载() {
     for 有单元 in [false, true] {
         let 沙箱 = 沙箱::新建();
@@ -550,6 +572,9 @@ fn 自定义套接字写入两个服务且保留环境美元符号() {
     assert!(引擎.contains("$值%%"));
     assert!(!引擎.contains("$$值"));
     assert!(引擎.contains("BindsTo=mackey-focusd.service"));
+    assert!(焦点.contains("ExecStartPost=systemctl --user --no-block start mackey-engine.service"));
+    assert!(焦点.contains("Type=notify"));
+    assert!(焦点.contains("StartLimitIntervalSec=0"));
 }
 #[test]
 fn 迁移失败回滚本次原值并保留最早备份() {
