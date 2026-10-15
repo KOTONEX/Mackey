@@ -4,7 +4,7 @@ use anyhow::{Result, ensure};
 use serde_json::Value;
 use std::path::Path;
 
-const 重装提示: &str = "旧配置不受支持。请先在旧版本仓库运行 ./uninstall.sh --yes（Python 版）或 ./卸载.sh --确认执行（旧 Rust 版），还原键位并清除旧配置，再运行新版 ./安装.sh";
+const 重装提示: &str = "旧配置不受支持。请先使用旧版本的卸载命令还原键位并清除旧配置，再从新版源码运行 cargo 运行 安装，或从发行包运行 ./mackey 安装";
 
 pub fn 校验(配置: Value) -> Result<Value> {
     let 对象 = 配置

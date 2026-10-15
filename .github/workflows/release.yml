@@ -27,30 +27,21 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: 准备 HOME 内的源码与开发依赖
-        run: |
-          cp -a "$GITHUB_WORKSPACE" "$HOME/mackey-ci"
-          sudo apt-get update
-          sudo apt-get install -y jq shellcheck gjs dbus-x11 build-essential cmake
-          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
-          rustup default stable
-      - name: 准备最新稳定原生 TypeScript
-        uses: ./.github/actions/原生编译器
+      - name: 编译原生准备工具
+        run: rustc --edition=2024 .github/流水线.rs -o "$HOME/mackey-流水线"
+      - name: 准备 HOME 内的源码与稳定工具链
+        run: '"$HOME/mackey-流水线" 准备 构建'
         env:
           GH_TOKEN: ${{ github.token }}
       - name: 校验发布标签与 Cargo 版本
-        env:
-          RELEASE_REF: ${{ github.ref }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          cd "$HOME/mackey-ci"
-          cargo_ver="$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "mackey") | .version')"
-          if [[ "$RELEASE_REF" == refs/tags/* ]]; then test "$RELEASE_TAG" = "v$cargo_ver"; fi
-      - name: 统一检查与原生发行包
-        run: |
-          cd "$HOME/mackey-ci"
-          cargo 检查
-          cargo 打包
+        working-directory: ${{ env.MACKEY_WORKSPACE }}
+        run: cargo 运行 流水线 校验标签
+      - name: 统一检查
+        working-directory: ${{ env.MACKEY_WORKSPACE }}
+        run: cargo 检查
+      - name: 原生发行包
+        working-directory: ${{ env.MACKEY_WORKSPACE }}
+        run: cargo 打包
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-linux-${{ matrix.arch }}
@@ -74,14 +65,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: 准备发行目录
-        run: |
-          cp -a "$GITHUB_WORKSPACE" "$HOME/mackey-release"
-          mkdir -p "$HOME/mackey-release/builddir/发行"
-          rustup toolchain install stable --profile minimal
-          rustup default stable
-      - name: 准备最新稳定原生 TypeScript
-        uses: ./.github/actions/原生编译器
+      - name: 编译原生准备工具
+        run: rustc --edition=2024 .github/流水线.rs -o "$HOME/mackey-流水线"
+      - name: 准备发行目录与稳定工具链
+        run: '"$HOME/mackey-流水线" 准备 发行'
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/download-artifact@v8
@@ -94,35 +81,14 @@ jobs:
           name: mackey-release-notes
           path: ~/mackey-release/builddir
       - name: 打包源码与 GNOME 扩展、生成校验和
-        run: |
-          cd "$HOME/mackey-release"
-          cargo 发布附件
+        working-directory: ${{ env.MACKEY_WORKSPACE }}
+        run: cargo 发布附件
       - name: 按主分支归属发布 Release
         if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: ${{ env.MACKEY_WORKSPACE }}
+        run: cargo 运行 流水线 公开发行
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          cd "$HOME/mackey-release"
-          git show-ref --verify --quiet refs/remotes/origin/主线
-          prerelease=true
-          latest=false
-          if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/主线; then
-            prerelease=false
-            latest=true
-          fi
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            if [[ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" != true ]]; then
-              echo '该版本已公开，拒绝覆盖附件；修正应发布新版本。' >&2
-              exit 1
-            fi
-            gh release upload "$RELEASE_TAG" builddir/发行/* --clobber
-            gh release edit "$RELEASE_TAG" --notes-file builddir/发布说明.md
-          else
-            gh release create "$RELEASE_TAG" builddir/发行/* --verify-tag --draft --prerelease --title "Mackey $RELEASE_TAG" --notes-file builddir/发布说明.md
-          fi
-          gh release edit "$RELEASE_TAG" --draft=false --prerelease="$prerelease" --latest="$latest"
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-release

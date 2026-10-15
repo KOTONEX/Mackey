@@ -99,18 +99,6 @@ pub fn 检查() -> Result<()> {
         ],
     )?;
     运行(&根, "cargo", &["check", "--locked", "--all-targets"])?;
-    let mut 脚本 = vec![
-        "命令/mackey".to_owned(),
-        "安装.sh".to_owned(),
-        "卸载.sh".to_owned(),
-    ];
-    脚本.sort();
-    for 文件 in &脚本 {
-        运行(&根, "bash", &["-n", 文件])?;
-    }
-    let mut 参数 = vec!["-S", "warning"];
-    参数.extend(脚本.iter().map(String::as_str));
-    运行(&根, "shellcheck", &参数)?;
     for 文件 in [
         "配置/行为清单.json",
         "扩展/mackey-focus@kotonex/metadata.json",

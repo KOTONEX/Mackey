@@ -229,13 +229,9 @@ fn 移除扩展登记(uuid: &str) -> Result<()> {
     Ok(())
 }
 fn 入口属于本项目(路径: &路径集合) -> bool {
-    if fs::read_link(&路径.命令入口).is_ok_and(|p| p == 路径.数据.join("bin/mackey")) {
-        return true;
-    }
-    let 根 = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    fs::read_to_string(&路径.命令入口)
-        .is_ok_and(|内容| 内容.contains(根.join("命令/mackey").to_str().unwrap_or("\0")))
+    fs::read_link(&路径.命令入口).is_ok_and(|目标| 目标 == 路径.数据.join("bin/mackey"))
 }
+
 pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Result<()> {
     检查桌面()?;
     路径.校验安装路径()?;

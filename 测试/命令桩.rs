@@ -48,17 +48,6 @@ fn 执行() -> anyhow::Result<()> {
             json!({"程序":名称.to_string_lossy(),"参数":参数})
         )?;
     }
-    if 名称 == "cargo" {
-        let 分隔 = 参数
-            .iter()
-            .position(|参数| 参数 == "--")
-            .ok_or_else(|| anyhow::anyhow!("源码入口必须通过 Cargo 转交参数"))?;
-        let 状态 = std::process::Command::new(env::var_os("MACKEY_TEST_BINARY").unwrap())
-            .args(&参数[分隔 + 1..])
-            .status()?;
-        anyhow::ensure!(状态.success(), "转发程序失败");
-        return Ok(());
-    }
     if 名称 == "systemctl" {
         let 单元目录 =
             std::path::PathBuf::from(env::var_os("XDG_CONFIG_HOME").unwrap()).join("systemd/user");

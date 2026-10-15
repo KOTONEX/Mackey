@@ -43,7 +43,7 @@ Mackey 按焦点应用分三套映射：
 
 ### 一键安装（推荐）
 
-`安装.sh` 会自动下载与你的 **指令集架构**匹配的 xremap 最新发布版本
+`mackey 安装` 会自动下载与你的 **指令集架构**匹配的 xremap 最新发布版本
 （Mackey 仅支持 GNOME Wayland，固定取 xremap 的 `gnome` 特性），再安装 GNOME 扩展
 与 systemd 用户服务。持久文件全程只写 `$HOME`，不需要 sudo；焦点 socket 使用用户运行时目录。原生安装命令会先校验 GNOME 桌面，非 GNOME 时中止。
 本项目仅支持 GNOME Wayland，不支持 X11；程序不检测或拦截 X11 会话。
@@ -55,22 +55,22 @@ Mackey 按焦点应用分三套映射：
 
 从 Python 版更新时，请先运行该版本的卸载脚本，再安装新版；不兼容旧配置接口。详见 [重新安装说明](文档/07-中文接口迁移.md)。
 
-源码安装先执行 `cargo build --locked --release --bin mackey`（需要 Rust/Cargo、C 编译器、原生 TypeScript 编译器（`tsc`））；发布二进制本身不需要 Rust、Python 或仓库。
+源码使用 Cargo 入口（需要 Rust/Cargo、C 编译器、原生 TypeScript 编译器 `tsc`）；发行包解压后直接执行 `./mackey 安装`，无需编译器、Python 或仓库。
 
 ```bash
-./安装.sh          # 可选：--不下载 跳过下载、--保持运行 保留旧服务、--确认执行 免确认
+cargo 运行 安装          # 可选：--不下载 跳过下载、--保持运行 保留旧服务
 ```
 
-脚本**可重复执行且幂等**：同一版本已有引擎 / 配置 / 服务时，会按当前指令集架构重新
+安装**可重复执行且幂等**：同一版本已有引擎 / 配置 / 服务时，会按当前指令集架构重新
 对齐引擎、重写服务与扩展、清理陈旧 socket 与自启软链，结果与「全新安装」一致
 （`--保持运行` 可保留正在运行的服务；`config.json` 里已有的字段值会保留，缺失字段自动补齐）。
 
-脚本结尾会提示必须做的两步：加入 `input` 组（唯一需要提权的动作）并**重新登录**；
+安装命令结尾会提示必须做的两步：加入 `input` 组（唯一需要提权的动作）并**重新登录**；
 重新登录后执行 `mackey 体检 && mackey 应用` 即可。
 
 > `安装` 会把命令行入口装到 `${XDG_BIN_HOME:-~/.local/bin}/mackey`。若该目录不在 PATH：
 > fish 执行 `fish_add_path ~/.local/bin`；bash 把 `export PATH="$HOME/.local/bin:$PATH"` 写进
-> `~/.bashrc`。在此之前可以直接使用仓库内的 `./命令/mackey`。
+> `~/.bashrc`。在此之前可以直接使用仓库内的 `cargo 运行`。
 
 ### 手动安装（等价的分步）
 
@@ -79,17 +79,17 @@ Mackey 按焦点应用分三套映射：
 sudo usermod -aG input "$USER"
 
 # 2) 下载引擎（也可以 cargo install xremap --features gnome，或手动放到 .vendor/xremap）
-./命令/mackey 获取引擎
+cargo 运行 获取引擎
 
 # 3) 生成配置（自动识别键盘配列）
-./命令/mackey 初始化
+cargo 运行 初始化
 
 # 4) 安装扩展与 systemd 用户服务（全部在 $HOME 内）
-./命令/mackey 安装 --不下载
+cargo 运行 安装 --不下载
 
 # 5) 重新登录（Wayland 下新装的 GNOME 扩展必须重新登录才会被加载），然后：
-./命令/mackey 体检      # 体检
-./命令/mackey 应用       # 迁移冲突键位（先备份）+ 启用
+cargo 运行 体检      # 体检
+cargo 运行 应用       # 迁移冲突键位（先备份）+ 启用
 ```
 
 ## 文件落点（遵循 XDG）
@@ -123,7 +123,7 @@ sudo usermod -aG input "$USER"
 | `mackey 检查` | 完整离线检查：静态检查、差分校验、隔离安装与卸载、① 原生单元（focusd + 生成器 + 引擎下载，不连 D-Bus）② 扩展契约（隔离带加载真实 `extension.js` + 真实 D-Bus 往返）端到端测试另行运行 `cargo 测试 --端到端`，需要虚拟键盘权限 |
 | `mackey 卸载` | 卸载并还原；默认清理配置/缓存；`--保留配置` 保留它们，`--预演` 只列清单，`--确认执行` 免确认 |
 
-一键卸载：`./卸载.sh`（默认清理配置，可加 `--保留配置` / `--预演` / `--确认执行`）。
+一键卸载：`mackey 卸载`（默认清理配置，可加 `--保留配置` / `--预演` / `--确认执行`）。
 
 ## 配置
 
@@ -151,22 +151,23 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 源码/库/键盘识别.rs                   键盘识别与布局建议
 源码/库/服务.rs                    初始化、安装、备份迁移、服务管理、卸载
 源码/库/路径.rs                      XDG 路径、HOME 边界检查、原子写入
-命令/mackey                        源码树的薄 Shell 入口
-安装.sh / 卸载.sh                 薄安装 / 卸载入口
+.github/流水线.rs                   无外部库依赖的 Rust 工具链准备器
 配置/行为清单.json             行为唯一事实源（编译时嵌入）
-扩展/mackey-focus@kotonex/    GNOME Shell 扩展（JS，编译时嵌入）
+扩展/mackey-focus@kotonex/    GNOME Shell 扩展（TS，构建为 JS 后嵌入）
 测试/虚拟键盘.rs          Rust uinput 虚拟键盘（仅测试）
 测试/命令行.rs                     独立二进制与 socket 集成测试
 测试/基准/                   旧生成器输出，用于差分回归
 .github/workflows/                Rust 检查、测试与双架构二进制发布
 ```
 
+原生流水线与扩展版本兼容说明见 [2.4.2 报告](文档/14-2.4.2原生流水线与扩展版本.md)。
+
 ## 环境要求
 
 | 项 | 说明 |
 | --- | --- |
 | 桌面 | GNOME（Wayland）；不支持 X11 会话与更旧版本 GNOME（GNOME 50 已移除 X11，扩展 API 变动频繁） |
-| 引擎 | xremap ≥ 0.15；`安装.sh` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `gnome` 特性的发布版本 |
+| 引擎 | xremap ≥ 0.15；`mackey 安装` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `gnome` 特性的发布版本 |
 | 构建 | Rust 稳定版、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）；`cargo build --locked --release --bin mackey` 构建独立二进制 |
 | 运行 | GSettings、systemd 用户会话、GNOME 扩展；不依赖 Python 或源码目录 |
 | 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |

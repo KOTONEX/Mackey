@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 [package]
 name = "mackey"
-version = "2.4.1"
+version = "2.4.2"
 # 当前采用最新稳定 Edition；新 Edition 发布后通过迁移与验收升级。
 edition = "2024"
 publish = false
@@ -59,3 +59,7 @@ path = "测试/命令行.rs"
 [[test]]
 name = "服务恢复"
 path = "测试/服务恢复.rs"
+
+[[test]]
+name = "流水线准备"
+path = ".github/流水线.rs"

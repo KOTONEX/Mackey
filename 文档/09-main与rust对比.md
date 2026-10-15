@@ -10,7 +10,7 @@
 
 | 项目 | main | rust |
 |---|---|---|
-| 用户入口 | Bash `bin/mackey`，由脚本编排各工具 | 原生 `mackey`，`命令/mackey` 仅启动已构建程序 |
+| 用户入口 | Bash `bin/mackey`，由脚本编排各工具 | 原生 `mackey`；源码直接使用 `cargo 运行` |
 | 主要逻辑 | Python 生成器、焦点桥、下载器、键盘识别 + Bash 安装/服务管理 | `源码/库/` 中 12 个功能模块与 1 个库入口，统一配置、服务、下载、焦点、开发与打包逻辑 |
 | GNOME 扩展 | JavaScript，通过 D-Bus 暴露焦点 | TypeScript 源码，编译为 GNOME 使用的 JavaScript，协议一致 |
 | 运行环境 | Bash、Python，焦点桥使用 PyGObject/GI 或 busctl | 原生可执行文件与系统 glibc；无需 Python/GI 运行时 |
@@ -25,12 +25,12 @@
 
 | 操作 | main | rust |
 |---|---|---|
-| 安装 | `./install.sh` | 源码先 `cargo build --locked --release --bin mackey`，再 `./安装.sh`；二进制包运行 `./mackey 安装` |
+| 安装 | `./install.sh` | 源码使用 `cargo 运行 安装`；二进制包运行 `./mackey 安装` |
 | 健康检查 | `mackey doctor` | `mackey 体检` |
 | 生成 | `mackey generate --no-probe` | `mackey 生成 --不探测` |
 | 应用 | `mackey apply` | `mackey 应用` |
 | 还原 | `mackey revert` | `mackey 还原` |
-| 卸载 | `./uninstall.sh --yes` | `./卸载.sh --确认执行` |
+| 卸载 | `./uninstall.sh --yes` | `mackey 卸载 --确认执行` |
 | 自有配置 | `modifier_layout`、`engine`；`apple`/`pc-swap`/`auto` | `修饰键布局`、`引擎`；`苹果`/`微软`/`自动` |
 | 开发验收 | 多个 Make 目标 | `cargo 检查` |
 
@@ -98,7 +98,7 @@ Python 3.14.7、rustc 1.99.0；Rust 使用带锁文件的宿主 `release` 构建
 
 ## 验证边界
 
-当前分支通过格式、Clippy、Rust/GJS 类型、ShellCheck、115 条旧版映射差分、Rust 单元与集成
+当前分支通过格式、Clippy、Rust/GJS 类型、115 条旧版映射差分、Rust 单元与集成
 测试、隔离安装/卸载、旧配置拒绝与原文保留、13 项 GJS/D-Bus 契约断言和发行包解压验证。
 
 真实键盘端到端测试未运行：本机已有全局捕获键盘的 xremap，双引擎可能同时捕获测试设备。

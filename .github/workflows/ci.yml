@@ -28,25 +28,18 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: 准备 HOME 内的源码与开发依赖
-        run: |
-          cp -a "$GITHUB_WORKSPACE" "$HOME/mackey-ci"
-          sudo apt-get update
-          sudo apt-get install -y jq shellcheck gjs dbus-x11 build-essential cmake
-          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
-          rustup default stable
-      - name: 准备最新稳定原生 TypeScript
-        uses: ./.github/actions/原生编译器
+      - name: 编译原生准备工具
+        run: rustc --edition=2024 .github/流水线.rs -o "$HOME/mackey-流水线"
+      - name: 准备 HOME 内的源码与稳定工具链
+        run: '"$HOME/mackey-流水线" 准备 构建'
         env:
           GH_TOKEN: ${{ github.token }}
       - name: 统一离线检查
-        run: |
-          cd "$HOME/mackey-ci"
-          cargo 检查
+        working-directory: ${{ env.MACKEY_WORKSPACE }}
+        run: cargo 检查
       - name: 验证发行打包
-        run: |
-          cd "$HOME/mackey-ci"
-          cargo 打包
+        working-directory: ${{ env.MACKEY_WORKSPACE }}
+        run: cargo 打包
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-ci-${{ matrix.arch }}

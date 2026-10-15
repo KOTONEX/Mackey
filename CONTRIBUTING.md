@@ -27,7 +27,7 @@
 |---|---|
 | Jujutsu（`jj`）/ Git | 本地版本管理、GitHub 互操作、发行日志与源码归档 |
 | Rust 稳定版 / Cargo / C 编译器 | 编译主程序、原生焦点桥、虚拟键盘测试 |
-| 原生 TypeScript 编译器（`tsc`）、ShellCheck | 扩展/契约/基类桩编译、严格类型与 Shell 静态检查 |
+| 原生 TypeScript 编译器（`tsc`） | 扩展/契约/基类桩编译、严格类型检查 |
 | `jq` / `gh` | CI 工具准备与发布；本地业务生成器不依赖 jq |
 | `gjs` | 扩展契约自测 |
 | `gsettings` / `dbus-run-session` | 探测 GNOME 键位、D-Bus |
@@ -36,7 +36,7 @@
 获取引擎（任一即可）：
 
 ```bash
-./命令/mackey 获取引擎       # 按指令集架构下载 xremap 最新发布版本（固定 gnome 特性），装到 XDG 数据目录
+cargo 运行 获取引擎       # 按指令集架构下载 xremap 最新发布版本（固定 gnome 特性），装到 XDG 数据目录
 cargo install xremap --features gnome
 # 或把发布页下载的二进制放到仓库的 .vendor/xremap（该目录已被 .gitignore 忽略）
 ```

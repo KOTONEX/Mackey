@@ -9,6 +9,8 @@ pub mod 引擎下载;
 pub mod 打包;
 #[path = "服务.rs"]
 pub mod 服务;
+#[path = "流水线.rs"]
+pub mod 流水线;
 #[path = "焦点桥.rs"]
 pub mod 焦点桥;
 #[path = "用户配置.rs"]
@@ -23,6 +25,10 @@ pub mod 配置生成;
 pub mod 键盘识别;
 #[path = "验证.rs"]
 pub mod 验证;
+
+#[cfg(test)]
+#[path = "../扩展元数据.rs"]
+mod 扩展元数据生成;
 
 pub const 扩展标识: &str = "mackey-focus@kotonex";
 pub const 旧扩展标识: &str = "xremap-compat@mackey.local";

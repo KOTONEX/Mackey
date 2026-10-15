@@ -381,7 +381,11 @@ mod 测试 {
         assert_eq!(元数据, crate::扩展元数据);
         let 元数据: Value = serde_json::from_slice(&元数据).unwrap();
         assert_eq!(元数据["version-name"], crate::版本);
-        assert!(元数据.get("version").is_none());
+        assert!(
+            元数据["version"]
+                .as_i64()
+                .is_some_and(|版本| 版本 > 0 && 版本 <= i32::MAX.into())
+        );
         let mut 源码 = tar::Archive::new(flate2::read::GzDecoder::new(
             fs::File::open(发行.join(format!("mackey-{}-source.tar.gz", crate::版本))).unwrap(),
         ));

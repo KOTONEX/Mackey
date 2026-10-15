@@ -2,7 +2,7 @@
 
 主程序、生成器、焦点桥、键盘识别和引擎下载器由 `mackey` Rust 二进制实现，运行无需
 Python、PyGObject 或 `busctl`。GNOME 扩展、契约测试与基类桩以 TypeScript 维护，由 Cargo 调用 `tsc` 生成 GJS 可运行的 JavaScript。
-源码树的 `命令/mackey`、安装与卸载脚本只负责启动和安装编排；自有命令与参数采用中文。
+源码树直接使用 `cargo 运行`；安装、卸载及工作流编排均由 Rust 负责，自有命令与参数采用中文。
 
 ## 构建与运行
 
@@ -68,7 +68,7 @@ GNOME 键位迁移先保存原始值再写 GSettings；还原失败时保留备�
 参考：[clap](https://docs.rs/clap/latest/clap/)、[reqwest](https://docs.rs/reqwest/latest/reqwest/blocking/struct.ClientBuilder.html)、
 [zip](https://docs.rs/zip/latest/zip/read/struct.ZipArchive.html)、[Linux uinput](https://www.kernel.org/doc/html/latest/input/uinput.html)。
 
-安装和卸载共用原生命令：`./安装.sh` 等价于 `mackey 安装`，`./卸载.sh` 等价于 `mackey 卸载`。
+源码通过 `cargo 运行 安装` / `cargo 运行 卸载` 调用原生命令；发行二进制直接执行 `./mackey 安装` / `./mackey 卸载`，无需脚本转发。
 卸载默认清理配置，可传 `--保留配置`；安装统一补齐缺失字段并备份损坏配置。
 X11 不受支持，但程序不作会话类型检测或拦截。
 
@@ -89,4 +89,4 @@ Bash 只保留三个启动壳；GNOME 扩展、真实 GJS 契约和基类桩均�
 
 扩展 `version-name` 从 Cargo 项目版本自动生成；构建输出的 metadata.json 与 TypeScript 产物一起嵌入，安装和扩展 ZIP 使用同一份字节。源码 metadata.json 仅保存静态信息，版本升级无需额外修改它。
 
-GNOME 的 `version` 是扩展网站管理的整数发布序号，不设置项目语义版本；用户可见版本使用 `version-name`，遵循 [GNOME 元数据规范](https://gjs.guide/extensions/overview/anatomy.html#version-name)。
+用户可见版本使用 `version-name`，遵循 [GNOME 元数据规范](https://gjs.guide/extensions/overview/anatomy.html#version-name)。GitHub 自分发包另按 `主版 × 1000000 + 次版 × 1000 + 补丁` 生成正的 32 位整数 `version`，避免扩展管理器 0.6.5 隐藏整个版本行。次版和补丁均小于 1000，溢出或歧义编码会使构建失败；扩展网站的整数序号仍由网站管理。

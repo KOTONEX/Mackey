@@ -25,7 +25,7 @@ impl 沙箱 {
         fs::create_dir_all(&主目录).unwrap();
         let 桩目录 = 临时.path().join("stubs");
         fs::create_dir(&桩目录).unwrap();
-        for 名称 in ["systemctl", "gsettings", "gnome-extensions", "cargo"] {
+        for 名称 in ["systemctl", "gsettings", "gnome-extensions"] {
             symlink(桩, 桩目录.join(名称)).unwrap();
         }
         Self { 临时, 主目录 }
@@ -60,7 +60,6 @@ impl 沙箱 {
             )
             .env("MACKEY_TEST_LOG", self.临时.path().join("调用.jsonl"))
             .env("MACKEY_TEST_SEED", self.临时.path().join("种子.json"))
-            .env("MACKEY_TEST_BINARY", 程序)
             .env_remove("MACKEY_TEST_FAIL_ONCE")
             .env_remove("MACKEY_ENGINE")
             .env_remove("MACKEY_TEST_FAIL_RESTORE")
@@ -126,46 +125,20 @@ fn 快照(根: &Path) -> BTreeMap<PathBuf, (u32, Vec<u8>)> {
     结果
 }
 #[test]
-fn 所有安装入口预检失败时零写入() {
-    for 入口 in ["原生命令", "脚本"] {
-        for (桌面, 会话, 提示) in [
-            ("KDE", "wayland", "仅支持 GNOME"),
-            ("KDE", "x11", "仅支持 GNOME"),
-        ] {
-            let 沙箱 = 沙箱::新建();
-            let mut 命令 = 沙箱.命令();
-            if 入口 == "脚本" {
-                // 只验证保留的最薄入口转发；实际业务逻辑均由 Rust 执行。
-                命令 = Command::new("bash");
-                let 环境 = 沙箱.命令();
-                命令.envs(环境.get_envs().filter_map(|(键, 值)| 值.map(|值| (键, 值))));
-                for (键, 值) in 环境.get_envs() {
-                    if 值.is_none() {
-                        命令.env_remove(键);
-                    }
-                }
-                命令.arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("安装.sh"));
-            } else {
-                命令.arg("安装");
-            }
-            let 输出 = 命令
-                .arg("--不下载")
-                .env("XDG_CURRENT_DESKTOP", 桌面)
-                .env("XDG_SESSION_TYPE", 会话)
-                .output()
-                .unwrap();
-            assert!(!输出.status.success());
-            assert!(String::from_utf8_lossy(&输出.stderr).contains(提示));
-            assert!(快照(&沙箱.主目录).is_empty());
-            let 调用 = 沙箱.调用();
-            assert!(调用.iter().all(|调用| 调用["程序"] == "cargo"));
-            if 入口 == "脚本" {
-                assert_eq!(调用.len(), 1);
-                let 参数 = 调用[0]["参数"].as_array().unwrap();
-                assert!(参数.contains(&json!("--locked")));
-                assert!(参数.contains(&json!("--manifest-path")));
-            }
-        }
+fn 原生安装桌面预检失败时零写入() {
+    for (桌面, 会话) in [("KDE", "wayland"), ("KDE", "x11")] {
+        let 沙箱 = 沙箱::新建();
+        let 输出 = 沙箱
+            .命令()
+            .args(["安装", "--不下载"])
+            .env("XDG_CURRENT_DESKTOP", 桌面)
+            .env("XDG_SESSION_TYPE", 会话)
+            .output()
+            .unwrap();
+        assert!(!输出.status.success());
+        assert!(String::from_utf8_lossy(&输出.stderr).contains("仅支持 GNOME"));
+        assert!(快照(&沙箱.主目录).is_empty());
+        assert!(沙箱.调用().is_empty());
     }
 }
 #[test]
@@ -219,7 +192,11 @@ fn 单次原生安装收敛缺失字段和陈旧产物() {
     assert_eq!(元数据, mackey::扩展元数据);
     let 元数据: Value = serde_json::from_slice(&元数据).unwrap();
     assert_eq!(元数据["version-name"], mackey::版本);
-    assert!(元数据.get("version").is_none());
+    assert!(
+        元数据["version"]
+            .as_i64()
+            .is_some_and(|版本| 版本 > 0 && 版本 <= i32::MAX.into())
+    );
     let mut 文件: Vec<_> = fs::read_dir(&扩展目录)
         .unwrap()
         .map(|项| 项.unwrap().file_name())
