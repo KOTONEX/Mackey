@@ -1,8 +1,6 @@
 {
   "recommendations": [
     "EditorConfig.EditorConfig",
-    "mads-hartmann.bash-ide-vscode",
-    "timonwong.shellcheck",
     "redhat.vscode-yaml",
     "github.vscode-github-actions",
     "rust-lang.rust-analyzer"
