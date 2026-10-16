@@ -20,7 +20,7 @@ fn 写入(路径: impl AsRef<Path>, 内容: impl AsRef<[u8]>) {
 }
 impl 沙箱 {
     fn 新建() -> Self {
-        let 临时 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 临时 = mackey::开发::临时目录().unwrap();
         let 主目录 = 临时.path().join("home");
         fs::create_dir_all(&主目录).unwrap();
         let 桩目录 = 临时.path().join("stubs");

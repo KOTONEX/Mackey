@@ -4,7 +4,7 @@
 use std::{
     fs,
     os::unix::fs::{PermissionsExt, symlink},
-    path::{Path, PathBuf},
+    path::Path,
     process::Command,
     time::{Duration, Instant},
 };
@@ -55,11 +55,7 @@ fn 写入(路径: &Path, 内容: impl AsRef<[u8]>) {
 #[test]
 #[ignore = "需要正在运行的用户 systemd；按需显式执行，使用独立服务及焦点套接字"]
 fn 登录来源延迟及焦点桥故障后引擎自动恢复() {
-    let 根 = PathBuf::from(std::env::var_os("HOME").unwrap());
-    let 临时 = tempfile::Builder::new()
-        .prefix(".mackey-服务恢复-")
-        .tempdir_in(&根)
-        .unwrap();
+    let 临时 = mackey::开发::临时目录().unwrap();
     let 家 = 临时.path().join("home");
     let 桩目录 = 临时.path().join("stubs");
     fs::create_dir_all(&桩目录).unwrap();

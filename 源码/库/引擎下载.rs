@@ -301,7 +301,7 @@ mod 测试 {
     #[test]
     fn 安装幂等检查记录权限及内容() {
         use std::os::unix::fs::PermissionsExt;
-        let 主目录 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 主目录 = crate::开发::临时目录().unwrap();
         let 目标路径 = 主目录.path().join("xremap");
         let 状态目录 = 主目录.path().join("engine.json");
         let payload = 测试程序内容(62);

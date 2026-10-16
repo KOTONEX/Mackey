@@ -29,9 +29,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 编译原生准备工具
-        run: rustc --edition=2024 .github/流水线.rs -o "$HOME/mackey-流水线"
-      - name: 准备 HOME 内的源码与稳定工具链
-        run: '"$HOME/mackey-流水线" 准备 构建'
+        run: rustc --edition=2024 .github/流水线.rs -o .github/流水线
+      - name: 准备项目目录与稳定工具链
+        run: .github/流水线 准备 构建
         env:
           GH_TOKEN: ${{ github.token }}
       - name: 统一离线检查
@@ -43,6 +43,6 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-ci-${{ matrix.arch }}
-          path: ~/mackey-ci/builddir/发行/*.tar.gz
+          path: ${{ env.MACKEY_WORKSPACE }}/builddir/发行/*.tar.gz
           if-no-files-found: error
           retention-days: 7

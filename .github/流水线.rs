@@ -45,20 +45,12 @@ fn 保护(主目录: &Path, 路径: &Path) -> 结果<PathBuf> {
     要求(结果.starts_with(主目录), "流水线输出必须位于 HOME 下")?;
     Ok(结果)
 }
-fn 复制树(源: &Path, 目标: &Path) -> 结果 {
-    let 属性 = fs::symlink_metadata(源)?;
-    要求(!属性.file_type().is_symlink(), "源码副本不接受软链")?;
-    if 属性.is_dir() {
-        fs::create_dir(目标)?;
-        for 项 in fs::read_dir(源)? {
-            let 项 = 项?;
-            复制树(&项.path(), &目标.join(项.file_name()))?;
-        }
-    } else {
-        要求(属性.is_file(), "源码副本只接受普通文件和目录")?;
-        fs::copy(源, 目标)?;
-    }
-    Ok(())
+fn 临时根(主目录: &Path, 根: &Path) -> 结果<PathBuf> {
+    let 根 = 保护(主目录, 根)?;
+    let 目录 = 保护(主目录, &根.join("builddir/临时"))?;
+    要求(目录.starts_with(&根), "流水线临时目录必须位于项目内")?;
+    fs::create_dir_all(&目录)?;
+    Ok(目录)
 }
 fn 平台架构(架构: &str) -> 结果<&'static str> {
     match 架构 {
@@ -93,7 +85,7 @@ fn 平台输出(变量: &str, 文本: &str) -> 结果 {
     writeln!(fs::OpenOptions::new().append(true).open(路径)?, "{文本}")?;
     Ok(())
 }
-fn 编译器(主目录: &Path) -> 结果 {
+fn 编译器(主目录: &Path, 根: &Path) -> 结果 {
     let 架构 = 平台架构(&env::var("RUNNER_ARCH")?)?;
     let 资产 = format!("typescript-linux-{架构}.tgz");
     let 查询 = format!(
@@ -123,10 +115,7 @@ fn 编译器(主目录: &Path) -> 结果 {
     let 时间 = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     let 目录 = 保护(
         主目录,
-        &主目录.join(format!(
-            ".local/share/mackey-ci-tools/tsc-{}-{时间}",
-            std::process::id()
-        )),
+        &临时根(主目录, 根)?.join(format!("tsc-{}-{时间}", std::process::id())),
     )?;
     fs::create_dir_all(&目录)?;
     运行(
@@ -179,14 +168,11 @@ fn 编译器(主目录: &Path) -> 结果 {
     平台输出("GITHUB_PATH", 字符串(&目录)?)
 }
 fn 准备(主目录: &Path, 模式: &str) -> 结果 {
-    let 名称 = match 模式 {
-        "构建" => "mackey-ci",
-        "发行" => "mackey-release",
-        _ => return Err("准备模式必须为构建或发行".into()),
-    };
+    要求(matches!(模式, "构建" | "发行"), "准备模式必须为构建或发行")?;
     let 源 = PathBuf::from(env::var_os("GITHUB_WORKSPACE").ok_or("缺少源码工作区")?);
-    let 目标 = 保护(主目录, &主目录.join(名称))?;
-    复制树(&源, &目标)?;
+    let 目标 = 保护(主目录, &源)?;
+    要求(目标.join("Cargo.toml").is_file(), "缺少 Mackey 源码")?;
+    临时根(主目录, &目标)?;
     fs::create_dir_all(目标.join("builddir/发行"))?;
     if 模式 == "构建" {
         // 只有 GitHub 临时 runner 准备阶段允许安装系统开发依赖。
@@ -221,7 +207,7 @@ fn 准备(主目录: &Path, 模式: &str) -> 结果 {
         ],
     )?;
     运行(主目录, "rustup", &["default", "stable"])?;
-    编译器(主目录)?;
+    编译器(主目录, &目标)?;
     let 工作区 = 字符串(&目标)?;
     要求(!工作区.contains(['\r', '\n']), "工作区不能包含换行")?;
     平台输出("GITHUB_ENV", &format!("MACKEY_WORKSPACE={工作区}"))
@@ -241,7 +227,10 @@ fn 执行() -> 结果 {
         .as_slice()
     {
         ["准备", 模式] => 准备(&主目录, 模式),
-        ["编译器"] => 编译器(&主目录),
+        ["编译器"] => {
+            let 根 = PathBuf::from(env::var_os("GITHUB_WORKSPACE").ok_or("缺少源码工作区")?);
+            编译器(&主目录, &根)
+        }
         _ => Err("用法：流水线 准备 构建|发行，或 流水线 编译器".into()),
     }
 }
@@ -280,10 +269,11 @@ mod 测试 {
         校验归档路径("package/lib/tsc").unwrap();
     }
     #[test]
-    fn 保护真实主目录并拒绝源码软链() {
+    fn 临时目录保护主目录且拒绝项目外软链() {
         let 主目录 = fs::canonicalize(env::var_os("HOME").unwrap()).unwrap();
-        let 路径 = 主目录.join(format!(
-            ".mackey-pipeline-test-{}",
+        let 根 = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let 路径 = 临时根(&主目录, 根).unwrap().join(format!(
+            "流水线测试-{}",
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -301,7 +291,12 @@ mod 测试 {
         std::os::unix::fs::symlink("/tmp", &链接).unwrap();
         assert!(保护(&主目录, &链接.join("escape")).is_err());
         assert!(保护(&主目录, &路径.join("../escape")).is_err());
-        assert!(复制树(&链接, &路径.join("copy")).is_err());
-        assert!(!路径.join("copy").exists());
+        let 项目 = 路径.join("项目");
+        let 外部 = 路径.join("外部");
+        fs::create_dir(&项目).unwrap();
+        fs::create_dir(&外部).unwrap();
+        std::os::unix::fs::symlink(&外部, 项目.join("builddir")).unwrap();
+        assert!(临时根(&主目录, &项目).is_err());
+        assert!(!外部.join("临时").exists());
     }
 }

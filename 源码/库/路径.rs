@@ -162,7 +162,7 @@ mod 测试 {
     use super::*;
     #[test]
     fn 拒绝路径遍历与软链逃逸() {
-        let temp = tempfile::tempdir_in(env::var_os("HOME").unwrap()).unwrap();
+        let temp = crate::开发::临时目录().unwrap();
         let 主目录 = temp.path().join("home");
         fs::create_dir(&主目录).unwrap();
         std::os::unix::fs::symlink(temp.path(), 主目录.join("escape")).unwrap();

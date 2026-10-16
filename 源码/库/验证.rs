@@ -31,9 +31,7 @@ pub fn 调试目录(根: &Path) -> Result<PathBuf> {
 }
 pub fn 扩展(根: &Path) -> Result<()> {
     let 路径 = 路径集合::发现()?;
-    let 临时 = tempfile::Builder::new()
-        .prefix(".mackey-扩展-")
-        .tempdir_in(&路径.主目录)?;
+    let 临时 = crate::开发::临时目录()?;
     let 原文 = std::str::from_utf8(crate::扩展脚本)?;
     let 导入 = "resource:///org/gnome/shell/extensions/extension.js";
     ensure!(
@@ -169,10 +167,7 @@ pub fn 检查归档架构(包: &Path, 架构: &str) -> Result<serde_json::Value>
 pub fn 发行包(根: &Path, 包: &Path) -> Result<()> {
     let 架构 = crate::引擎下载::识别架构(std::env::consts::ARCH)?;
     检查归档架构(包, 架构)?;
-    let 路径 = 路径集合::发现()?;
-    let 临时 = tempfile::Builder::new()
-        .prefix(".mackey-发行验证-")
-        .tempdir_in(&路径.主目录)?;
+    let 临时 = crate::开发::临时目录()?;
     let 解压 = 临时.path().join("解压");
     fs::create_dir(&解压)?;
     解包(包, &解压)?;
@@ -235,7 +230,7 @@ mod 测试 {
     use super::*;
     #[test]
     fn 拒绝带软链的归档() {
-        let 临时 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 临时 = crate::开发::临时目录().unwrap();
         let 包 = 临时.path().join("非法.tar.gz");
         let mut 写入器 = tar::Builder::new(flate2::write::GzEncoder::new(
             fs::File::create(&包).unwrap(),

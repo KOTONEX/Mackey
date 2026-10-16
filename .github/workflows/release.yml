@@ -28,9 +28,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 编译原生准备工具
-        run: rustc --edition=2024 .github/流水线.rs -o "$HOME/mackey-流水线"
-      - name: 准备 HOME 内的源码与稳定工具链
-        run: '"$HOME/mackey-流水线" 准备 构建'
+        run: rustc --edition=2024 .github/流水线.rs -o .github/流水线
+      - name: 准备项目目录与稳定工具链
+        run: .github/流水线 准备 构建
         env:
           GH_TOKEN: ${{ github.token }}
       - name: 校验发布标签与 Cargo 版本
@@ -45,13 +45,13 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-linux-${{ matrix.arch }}
-          path: ~/mackey-ci/builddir/发行/*.tar.gz
+          path: ${{ env.MACKEY_WORKSPACE }}/builddir/发行/*.tar.gz
           if-no-files-found: error
       - uses: actions/upload-artifact@v7
         if: matrix.arch == 'x86_64'
         with:
           name: mackey-release-notes
-          path: ~/mackey-ci/builddir/发布说明.md
+          path: ${{ env.MACKEY_WORKSPACE }}/builddir/发布说明.md
           if-no-files-found: error
   release:
     name: 校验并发布附件
@@ -66,20 +66,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 编译原生准备工具
-        run: rustc --edition=2024 .github/流水线.rs -o "$HOME/mackey-流水线"
+        run: rustc --edition=2024 .github/流水线.rs -o .github/流水线
       - name: 准备发行目录与稳定工具链
-        run: '"$HOME/mackey-流水线" 准备 发行'
+        run: .github/流水线 准备 发行
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/download-artifact@v8
         with:
           pattern: mackey-linux-*
-          path: ~/mackey-release/builddir/发行
+          path: ${{ env.MACKEY_WORKSPACE }}/builddir/发行
           merge-multiple: true
       - uses: actions/download-artifact@v8
         with:
           name: mackey-release-notes
-          path: ~/mackey-release/builddir
+          path: ${{ env.MACKEY_WORKSPACE }}/builddir
       - name: 打包源码与 GNOME 扩展、生成校验和
         working-directory: ${{ env.MACKEY_WORKSPACE }}
         run: cargo 发布附件
@@ -92,5 +92,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: mackey-release
-          path: ~/mackey-release/builddir/发行/*
+          path: ${{ env.MACKEY_WORKSPACE }}/builddir/发行/*
           if-no-files-found: error

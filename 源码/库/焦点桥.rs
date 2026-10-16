@@ -313,7 +313,7 @@ mod 测试 {
     fn 就绪通知支持文件和抽象套接字且无通知环境时可独立运行() {
         use std::os::linux::net::SocketAddrExt;
         通知就绪(None).unwrap();
-        let 临时 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 临时 = crate::开发::临时目录().unwrap();
         let 文件 = 临时.path().join("notify.sock");
         let 接收 = UnixDatagram::bind(&文件).unwrap();
         接收.set_read_timeout(Some(Duration::from_secs(1))).unwrap();

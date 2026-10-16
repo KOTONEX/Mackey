@@ -8,6 +8,8 @@
 target/
 dist/
 builddir/
+# CI 首阶段直接由 rustc 生成的准备器；目录及后续临时工具均留在项目内
+/.github/流水线
 
 # 本地运行与测试产物
 *.log

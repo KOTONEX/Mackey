@@ -10,7 +10,7 @@ use std::{
 };
 const 测试程序: &str = env!("CARGO_BIN_EXE_mackey");
 fn 主目录() -> tempfile::TempDir {
-    tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap()
+    mackey::开发::临时目录().unwrap()
 }
 fn 执行命令(主目录: &Path) -> Command {
     let mut c = Command::new(测试程序);

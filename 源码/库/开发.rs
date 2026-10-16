@@ -15,6 +15,17 @@ pub fn 仓库() -> Result<PathBuf> {
     let 路径 = 路径集合::发现()?;
     路径.保护(&根)
 }
+/// 开发、测试和打包共用项目内的临时空间，不能通过软链转移到项目外。
+pub fn 临时目录() -> Result<tempfile::TempDir> {
+    let 根 = 仓库()?;
+    Ok(tempfile::tempdir_in(临时根(&根)?)?)
+}
+fn 临时根(根: &Path) -> Result<PathBuf> {
+    let 目录 = 路径集合::发现()?.保护(&根.join("builddir/临时"))?;
+    ensure!(目录.starts_with(根), "临时目录必须位于项目内");
+    std::fs::create_dir_all(&目录)?;
+    Ok(目录)
+}
 pub fn 运行(根: &Path, 程序: &str, 参数: &[&str]) -> Result<()> {
     eprintln!("→ {程序} {}", 参数.join(" "));
     let 状态 = Command::new(程序)
@@ -28,9 +39,7 @@ pub fn 运行(根: &Path, 程序: &str, 参数: &[&str]) -> Result<()> {
 fn 校验() -> Result<()> {
     let 根 = 仓库()?;
     let 路径 = 路径集合::发现()?;
-    let 临时目录 = tempfile::Builder::new()
-        .prefix(".mackey-校验-")
-        .tempdir_in(&路径.主目录)?;
+    let 临时目录 = 临时目录()?;
     let 结果 = 配置生成::执行(
         &路径,
         &配置生成::选项 {
@@ -112,4 +121,25 @@ pub fn 检查() -> Result<()> {
     测试()?;
     println!("✓ 完整离线检查通过");
     Ok(())
+}
+
+#[cfg(test)]
+mod 测试 {
+    use super::*;
+    #[test]
+    fn 临时目录留在项目内且拒绝软链转移() {
+        let 临时 = 临时目录().unwrap();
+        assert!(
+            临时
+                .path()
+                .starts_with(仓库().unwrap().join("builddir/临时"))
+        );
+        let 项目 = 临时.path().join("项目");
+        let 外部 = 临时.path().join("外部");
+        std::fs::create_dir(&项目).unwrap();
+        std::fs::create_dir(&外部).unwrap();
+        std::os::unix::fs::symlink(&外部, 项目.join("builddir")).unwrap();
+        assert!(临时根(&项目).is_err());
+        assert!(!外部.join("临时").exists());
+    }
 }

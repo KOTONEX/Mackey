@@ -34,9 +34,7 @@ pub fn 执行() -> Result<std::path::PathBuf> {
     let 路径 = 路径集合::发现()?;
     let 日志 = crate::变更日志::生成(false)?;
     let 发布说明 = crate::变更日志::生成(true)?;
-    let 临时 = tempfile::Builder::new()
-        .prefix(".mackey-打包-")
-        .tempdir_in(&路径.主目录)?;
+    let 临时 = crate::开发::临时目录()?;
     let 架构 = crate::引擎下载::识别架构(std::env::consts::ARCH)?;
     let 名称 = format!("mackey-{}-linux-{架构}", crate::版本);
     let 包目录 = 临时.path().join(&名称);
@@ -250,7 +248,7 @@ mod 测试 {
     use std::io::Read;
     #[test]
     fn 发布附件包含提交源码真实扩展与四项校验和() {
-        let 临时 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 临时 = crate::开发::临时目录().unwrap();
         let 根 = 临时.path();
         fs::write(根.join("README.md"), "源码探针").unwrap();
         let 扩展 = 根.join("扩展").join(crate::扩展标识);

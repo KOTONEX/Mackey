@@ -222,10 +222,7 @@ pub fn 执行(根: &Path, 引擎: &Path) -> Result<()> {
             .is_ok(),
         "/dev/uinput 不可写"
     );
-    let 路径 = 路径集合::发现()?;
-    let 临时 = tempfile::Builder::new()
-        .prefix(".mackey-e2e-")
-        .tempdir_in(&路径.主目录)?;
+    let 临时 = crate::开发::临时目录()?;
     let 构建 = crate::验证::调试目录(根)?;
     let 程序 = 构建.join("mackey");
     let 注入器 = 构建.join("examples/虚拟键盘");
@@ -310,7 +307,7 @@ mod 测试 {
     use super::*;
     #[test]
     fn 进程组退出时子进程被回收() {
-        let 临时 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 临时 = crate::开发::临时目录().unwrap();
         let mut 命令 = Command::new("sleep");
         命令.arg("60");
         let 进程 = 测试进程::启动(&mut 命令, &临时.path().join("日志")).unwrap();

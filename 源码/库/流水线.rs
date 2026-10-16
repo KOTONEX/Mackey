@@ -162,7 +162,7 @@ mod 测试 {
     }
     #[test]
     fn 正式发行必须属于远程主线历史() {
-        let 临时 = tempfile::tempdir_in(std::env::var_os("HOME").unwrap()).unwrap();
+        let 临时 = crate::开发::临时目录().unwrap();
         let 根 = 临时.path();
         let git = |参数: &[&str]| {
             let 输出 = Command::new("git")
