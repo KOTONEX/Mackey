@@ -1,7 +1,7 @@
 {
   "keymap": [
     {
-      "name": "terminal：终端里 Ctrl+C/Z/D 是信号与 EOF，必须单独一套",
+      "name": "终端：终端里 Ctrl+C/Z/D 是信号与 EOF，必须单独一套",
       "application": {
         "only": [
           "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/"
@@ -60,7 +60,7 @@
       }
     },
     {
-      "name": "swallow-terminal：终端里吞掉 Ctrl+Shift+C/V（复制/粘贴只认 ⌘C/⌘V）",
+      "name": "终端吞键：终端里吞掉 Ctrl+Shift+C/V（复制/粘贴只认 ⌘C/⌘V）",
       "application": {
         "only": [
           "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/"
@@ -72,7 +72,7 @@
       }
     },
     {
-      "name": "files：文件管理器语义不同（⌘⌫=废纸篓、⌘I=属性）",
+      "name": "文件管理器：文件管理器语义不同（⌘⌫=废纸篓、⌘I=属性）",
       "application": {
         "only": [
           "/^(org\\.gnome\\.Nautilus|nautilus|Nautilus|org\\.gnome\\.Files|dolphin|Dolphin|thunar|Thunar|nemo|Nemo|org\\.nemo\\.Nemo|pcmanfm|pcmanfm-qt|krusader|caja|Caja|Files)$/"
@@ -96,7 +96,7 @@
       }
     },
     {
-      "name": "generic：其余应用的兜底（只含显式条目）",
+      "name": "通用：其余应用的兜底（只含显式条目）",
       "remap": {
         "SUPER-C": "C-C",
         "SUPER-V": "C-V",
@@ -176,7 +176,7 @@
       }
     },
     {
-      "name": "generic-sweep：泛化兜底（终端不参与）",
+      "name": "泛化兜底：通用组合（终端不参与）",
       "application": {
         "not": [
           "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/"
@@ -212,7 +212,7 @@
       }
     },
     {
-      "name": "swallow：替换模式（终端与内嵌终端应用除外）",
+      "name": "吞控制组合：替换模式（终端与内嵌终端应用除外）",
       "application": {
         "not": [
           "/^(org\\.gnome\\.Terminal|gnome-terminal-server|kgx|org\\.gnome\\.Console|Ptyxis|org\\.gnome\\.Ptyxis|alacritty|Alacritty|kitty|foot|footclient|wezterm|WezTerm|org\\.wezfurlong\\.wezterm|xterm|XTerm|uxterm|konsole|Konsole|st|st-256color|com\\.raggesilver\\.BlackBox|tilix|terminator|guake|tabby|Tabby|ghostty|com\\.mitchellh\\.ghostty|deepin-terminal|qterminal|QTerminal|mate-terminal|xfce4-terminal|Hyper|hyper)$/",

@@ -183,3 +183,56 @@ fn 套接字不替换普通文件() {
     assert!(!result.status.success());
     assert_eq!(fs::read_to_string(套接字).unwrap(), "keep");
 }
+
+#[test]
+fn 各层帮助均使用中文展示且保留标准参数() {
+    let 临时 = 主目录();
+    let 根 = 执行命令(临时.path()).arg("--help").output().unwrap();
+    assert!(根.status.success());
+    let 根帮助 = String::from_utf8(根.stdout).unwrap();
+    let 命令: Vec<_> = 根帮助
+        .lines()
+        .filter_map(|行| {
+            let 内容 = 行.strip_prefix("  ")?;
+            let 名称 = 内容.split_whitespace().next()?;
+            (!名称.starts_with('-')).then_some(名称.to_owned())
+        })
+        .collect();
+    assert!(命令.len() >= 20, "{根帮助}");
+    for 子命令 in std::iter::once(None).chain(命令.iter().map(Some)) {
+        let mut 进程 = 执行命令(临时.path());
+        if let Some(名称) = 子命令 {
+            进程.arg(名称);
+        }
+        let 输出 = 进程.arg("--help").output().unwrap();
+        assert!(输出.status.success());
+        let 帮助 = String::from_utf8(输出.stdout).unwrap();
+        assert!(
+            帮助.contains("用法：mackey") && 帮助.contains("显示帮助"),
+            "{帮助}"
+        );
+        if let Some(名称) = 子命令 {
+            assert!(帮助.contains(&format!("用法：mackey {名称}")), "{帮助}");
+        }
+        for 遗漏 in [
+            "Usage:",
+            "Commands:",
+            "Options:",
+            "Arguments:",
+            "Print help",
+            "Print version",
+            "[OPTIONS]",
+            "[COMMAND]",
+            "[default:",
+            "[possible values:",
+        ] {
+            assert!(!帮助.contains(遗漏), "{帮助}");
+        }
+    }
+    let 版本 = 执行命令(临时.path()).arg("--version").output().unwrap();
+    assert!(版本.status.success());
+    assert_eq!(
+        String::from_utf8(版本.stdout).unwrap().trim(),
+        format!("mackey {}", mackey::版本)
+    );
+}

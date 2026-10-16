@@ -94,7 +94,7 @@ pub fn 初始化(路径: &路径集合) -> Result<()> {
     };
     user = crate::用户配置::校验(user)?;
     let layout = crate::键盘识别::当前键盘()["建议布局"].clone();
-    let defaults = json!({"修饰键布局":layout,"_修饰键布局_说明":"苹果 = ⌘ 就是 Super 键（Apple 键盘或机械键盘的 Mac 模式）；微软 = 把物理 Alt/Win 交换，让空格旁那颗键变成 ⌘（PC 配列键盘）","device":{},"_device_说明":"只重映射指定键盘，例如 {\"only\": [\"MX Keys\"]}；留空=全部键盘","keypress_delay_ms":0,"_keypress_delay_ms_说明":"Wayland 下个别应用对合成按键不敏感时，可设 20 试试","引擎":"","_引擎_说明":"自定义 xremap 路径；留空=用 XDG 数据目录里下载的引擎"});
+    let defaults = json!({"修饰键布局":layout,"_修饰键布局_说明":"苹果 = ⌘ 就是 Super 键（Apple 键盘或机械键盘的 Mac 模式）；微软 = 把物理 Alt/Win 交换，让空格旁那颗键变成 ⌘（PC 配列键盘）","device":{},"_设备_说明":"只重映射指定键盘，例如 {\"only\": [\"MX Keys\"]}；留空=全部键盘","keypress_delay_ms":0,"_按键延迟_说明":"Wayland 下个别应用对合成按键不敏感时，可设 20 试试","引擎":"","_引擎_说明":"自定义 xremap 路径；留空=用 XDG 数据目录里下载的引擎"});
     for (key, value) in defaults.as_object().unwrap() {
         user.as_object_mut()
             .unwrap()

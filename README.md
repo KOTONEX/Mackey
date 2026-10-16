@@ -21,9 +21,12 @@ Mackey 按焦点应用分三套映射：
 
 | 配置档 | 覆盖对象 | 差异示例 |
 | --- | --- | --- |
-| `terminal` | GNOME Terminal / Console / Ghostty / kitty / Alacritty / WezTerm / foot / xterm… | ⌘C→`Ctrl+Shift+C`、⌘V→`Ctrl+Shift+V`、⌘W→`Ctrl+Shift+W`、⌘1..9→`Alt+1..9`；危险键显式吞掉（⌘D、⌘Z、⌘R，否则会变成 EOF / 挂起 / 反向搜索） |
-| `files` | Nautilus / Dolphin / Thunar / Nemo… | ⌘I→`Alt+Enter`（属性）、⌘⌫→`Delete`（移到废纸篓） |
-| `generic` | 其余应用（浏览器、编辑器等） | ⌘C→`Ctrl+C`、⌘←/→→`Home/End`、⌥←/→→`Ctrl+←/→`、⌘⇧[/]→`Ctrl+PgUp/PgDn`、⌘[/]→`Alt+←/→`；其余 ⌘+字母做泛化翻译，并与 GNOME 已占用键位自动互斥 |
+| `终端` | GNOME Terminal / Console / Ghostty / kitty / Alacritty / WezTerm / foot / xterm… | ⌘C→`Ctrl+Shift+C`、⌘V→`Ctrl+Shift+V`、⌘W→`Ctrl+Shift+W`、⌘1..9→`Alt+1..9`；危险键显式吞掉（⌘D、⌘Z、⌘R，否则会变成 EOF / 挂起 / 反向搜索） |
+| `文件管理器` | Nautilus / Dolphin / Thunar / Nemo… | ⌘I→`Alt+Enter`（属性）、⌘⌫→`Delete`（移到废纸篓） |
+| `通用` | 其余应用（浏览器、编辑器等） | ⌘C→`Ctrl+C`、⌘←/→→`Home/End`、⌥←/→→`Ctrl+←/→`、⌘⇧[/]→`Ctrl+PgUp/PgDn`、⌘[/]→`Alt+←/→`；其余 ⌘+字母做泛化翻译，并与 GNOME 已占用键位自动互斥 |
+
+配置档及行为清单中的自有字段、标识和枚举值统一使用中文；生成规则的显示名称同样使用中文。
+xremap、GNOME、D-Bus 规定的字段和按键代码保留原名，详见[中文接口说明](文档/07-中文接口迁移.md)。
 
 完整键位表（按「遵循 macOS / 遵循 GNOME 默认」分类，并标注 GNOME 已占用键位的归属）见
 **[文档/03-行为清单.md](文档/03-行为清单.md)** —— 由清单自动生成，不是手抄文档。
@@ -44,7 +47,7 @@ Mackey 按焦点应用分三套映射：
 ### 一键安装（推荐）
 
 `mackey 安装` 会自动下载与你的 **指令集架构**匹配的 xremap 最新发布版本
-（Mackey 仅支持 GNOME Wayland，固定取 xremap 的 `gnome` 特性），再安装 GNOME 扩展
+（Mackey 仅支持 GNOME Wayland，固定取 xremap 的 `系统默认` 特性），再安装 GNOME 扩展
 与 systemd 用户服务。持久文件全程只写 `$HOME`，不需要 sudo；焦点 socket 使用用户运行时目录。原生安装命令会先校验 GNOME 桌面，非 GNOME 时中止。
 本项目仅支持 GNOME Wayland，不支持 X11；程序不检测或拦截 X11 会话。
 
@@ -100,7 +103,7 @@ cargo 运行 应用       # 迁移冲突键位（先备份）+ 启用
 | 配置（`config.json`、生成的 `xremap.json`、迁移计划、键位备份） | `${XDG_CONFIG_HOME:-~/.config}/mackey/` |
 | 引擎二进制（`获取引擎` 下载） | `${XDG_DATA_HOME:-~/.local/share}/mackey/bin/xremap` |
 | 下载与解压的中间产物 | `${XDG_CACHE_HOME:-~/.cache}/mackey/` |
-| 安装记录（标签 / 来源 URL / sha256） | `${XDG_STATE_HOME:-~/.local/state}/mackey/engine.json` |
+| 安装记录（标签 / 来源地址 / 摘要） | `${XDG_STATE_HOME:-~/.local/state}/mackey/engine.json` |
 | GNOME 扩展 | `${XDG_DATA_HOME:-~/.local/share}/gnome-shell/extensions/mackey-focus@kotonex` |
 | systemd 用户服务 | `${XDG_CONFIG_HOME:-~/.config}/systemd/user/mackey-{focusd,engine}.service` |
 | 焦点桥 socket | `${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mackey-focus.sock` |
@@ -114,7 +117,7 @@ cargo 运行 应用       # 迁移冲突键位（先备份）+ 启用
 | `mackey 状态` | 当前状态（会话 / 引擎 / 焦点桥 / 扩展 / 服务） |
 | `mackey 体检` | 体检：权限、引擎、扩展、焦点来源、冲突、历史遗留的一键排查 |
 | `mackey 版本` | 显示版本与引擎路径（等价于 `mackey --version`） |
-| `mackey 获取引擎` | 下载与指令集架构匹配的 xremap 最新发布版本（固定 `gnome` 特性；`--标签` 指定版本，`--输出计划` 只看计划） |
+| `mackey 获取引擎` | 下载与指令集架构匹配的 xremap 最新发布版本（固定 `系统默认` 特性；`--标签` 指定版本，`--输出计划` 只看计划） |
 | `mackey 探测` | 只读地打印 GNOME 已占用键位与需要迁移的项 |
 | `mackey 生成` | 重新生成 xremap 配置 / 迁移计划 / 行为清单 |
 | `mackey 应用` | 生成 + 迁移键位（带备份）+ 重启服务 |
@@ -167,7 +170,7 @@ Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
 | 项 | 说明 |
 | --- | --- |
 | 桌面 | GNOME（Wayland）；不支持 X11 会话与更旧版本 GNOME（GNOME 50 已移除 X11，扩展 API 变动频繁） |
-| 引擎 | xremap ≥ 0.15；`mackey 安装` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `gnome` 特性的发布版本 |
+| 引擎 | xremap ≥ 0.15；`mackey 安装` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `系统默认` 特性的发布版本 |
 | 构建 | Rust 稳定版、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）；`cargo build --locked --release --bin mackey` 构建独立二进制 |
 | 运行 | GSettings、systemd 用户会话、GNOME 扩展；不依赖 Python 或源码目录 |
 | 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |

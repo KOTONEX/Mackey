@@ -212,12 +212,7 @@ fn 单次原生安装收敛缺失字段和陈旧产物() {
     let 基准 = 快照(&沙箱.主目录);
     let 配置路径 = 沙箱.路径(".config/mackey/config.json");
     let mut 配置: Value = serde_json::from_slice(&fs::read(&配置路径).unwrap()).unwrap();
-    for 键 in [
-        "keypress_delay_ms",
-        "_keypress_delay_ms_说明",
-        "引擎",
-        "_引擎_说明",
-    ] {
+    for 键 in ["keypress_delay_ms", "_按键延迟_说明", "引擎", "_引擎_说明"] {
         配置.as_object_mut().unwrap().remove(键);
     }
     写入(&配置路径, serde_json::to_vec_pretty(&配置).unwrap());

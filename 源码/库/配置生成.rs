@@ -348,14 +348,50 @@ pub fn 校验(c: &行为清单) -> Result<()> {
         .iter()
         .filter_map(|r| r["标识"].as_str().map(str::to_owned))
         .collect();
+    let 配置档 = ["通用", "终端", "文件管理器"];
+    ensure!(
+        c.应用档.keys().all(|名称| 配置档.contains(&名称.as_str())),
+        "应用档包含未知配置档"
+    );
+    ensure!(
+        字符串列表(&c.泛化兜底["应用档"])
+            .iter()
+            .all(|名称| 名称 == "通用"),
+        "泛化兜底仅支持通用配置档"
+    );
+    ensure!(
+        字符串列表(&c.泛化兜底["类别"])
+            .iter()
+            .all(|类别| ["字母", "上档字母", "上档数字"].contains(&类别.as_str())),
+        "泛化兜底包含未知类别"
+    );
     let mut seen = 键位集合::new();
     for e in &c.条目 {
+        ensure!(
+            ["转换", "自动", "放行", "跳过"].contains(&e.策略.as_str()),
+            "{}：未知策略 {}",
+            e.标识,
+            e.策略
+        );
+        ensure!(
+            ["需映射", "近似", "需迁移", "原生等价", "可选", "无法模拟"].contains(&e.状态.as_str()),
+            "{}：未知状态 {}",
+            e.标识,
+            e.状态
+        );
+        ensure!(
+            e.目标组合
+                .keys()
+                .all(|名称| 配置档.contains(&名称.as_str())),
+            "{}：目标组合包含未知配置档",
+            e.标识
+        );
         ensure!(seen.insert(e.标识.clone()), "重复条目: {}", e.标识);
-        let expected = if ["translate", "auto"].contains(&e.策略.as_str()) && !e.目标组合.is_empty()
+        let expected = if ["转换", "自动"].contains(&e.策略.as_str()) && !e.目标组合.is_empty()
         {
-            "macos"
+            "苹果风格"
         } else {
-            "gnome"
+            "系统默认"
         };
         ensure!(
             e.归属 == expected,
@@ -499,22 +535,22 @@ fn 泛化兜底(c: &行为清单, p: &探测结果, reserved: &键位集合) -> 
             描述: "（泛化翻译）".into(),
             触发键: trigger,
             目标组合: BTreeMap::from([("通用".into(), json!(target))]),
-            状态: "mapped".into(),
-            归属: "macos".into(),
-            策略: "translate".into(),
+            状态: "需映射".into(),
+            归属: "苹果风格".into(),
+            策略: "转换".into(),
             自动生成: true,
             ..行为条目::default()
         });
     };
     for ch in 'A'..='Z' {
         add(
-            "letter",
+            "字母",
             format!("Super-{ch}"),
             format!("C-{ch}"),
             format!("⌘{ch}"),
         );
         add(
-            "letter-shift",
+            "上档字母",
             format!("Super-S-{ch}"),
             format!("C-S-{ch}"),
             format!("⇧⌘{ch}"),
@@ -522,7 +558,7 @@ fn 泛化兜底(c: &行为清单, p: &探测结果, reserved: &键位集合) -> 
     }
     for d in '1'..='9' {
         add(
-            "digit-shift",
+            "上档数字",
             format!("Super-S-{d}"),
             format!("C-S-{d}"),
             format!("⌘⇧{d}"),
@@ -536,18 +572,18 @@ pub fn 截图目标(
     let mut result = 键位表::new();
     for (id, keys) in [
         (
-            "screenshot-region",
+            "截图-区域",
             vec!["org.gnome.shell.keybindings show-screenshot-ui"],
         ),
         (
-            "screenshot-all",
+            "截图-全屏",
             vec![
                 "org.gnome.shell.keybindings screenshot",
                 "org.gnome.settings-daemon.plugins.media-keys screenshot",
             ],
         ),
         (
-            "screenshot-window",
+            "截图-窗口",
             vec![
                 "org.gnome.shell.keybindings screenshot-window",
                 "org.gnome.settings-daemon.plugins.media-keys window-screenshot",
@@ -616,7 +652,7 @@ pub fn 编译配置(c: &行为清单, user: &Value, p: &探测结果) -> Result<
     }
     let allow: 键位集合 = 条目
         .iter()
-        .filter(|e| e.标识.starts_with("screenshot-"))
+        .filter(|e| e.标识.starts_with("截图-"))
         .map(|e| 规范组合(&e.触发键))
         .collect();
     let derived = 截图目标(&p.绑定表, &consuming, &allow);
@@ -669,7 +705,7 @@ pub fn 编译配置(c: &行为清单, user: &Value, p: &探测结果) -> Result<
     let mut 配置 = json!({});
     match layout {
         "微软" => {
-            配置["modmap"] = json!([{"name":"pc-position-swap: 把 ⌘/⌥ 摆到 macOS 的物理位置", "remap":{"ALT_L":"SUPER_L","SUPER_L":"ALT_L","ALT_R":"SUPER_R","SUPER_R":"ALT_R"}}]);
+            配置["modmap"] = json!([{"name":"微软布局换位：把 ⌘/⌥ 摆到 macOS 的物理位置", "remap":{"ALT_L":"SUPER_L","SUPER_L":"ALT_L","ALT_R":"SUPER_R","SUPER_R":"ALT_R"}}]);
             if !字符串列表(&user["device"]["only"]).is_empty()
                 || !字符串列表(&user["device"]["not"]).is_empty()
             {
@@ -721,31 +757,31 @@ pub fn 编译配置(c: &行为清单, user: &Value, p: &探测结果) -> Result<
             .into()
     };
     push(
-        "terminal：终端里 Ctrl+C/Z/D 是信号与 EOF，必须单独一套",
+        "终端：终端里 Ctrl+C/Z/D 是信号与 EOF，必须单独一套",
         Some(json!({"only":term_match})),
         组装映射(&terminal, "终端"),
     );
     if c.吞终端组合["启用"] == true && !字符串列表(&c.吞终端组合["触发组合"]).is_empty()
     {
         push(
-            "swallow-terminal：终端里吞掉 Ctrl+Shift+C/V（复制/粘贴只认 ⌘C/⌘V）",
+            "终端吞键：终端里吞掉 Ctrl+Shift+C/V（复制/粘贴只认 ⌘C/⌘V）",
             Some(json!({"only":term_match})),
             swallow_map(&c.吞终端组合),
         );
     }
     push(
-        "files：文件管理器语义不同（⌘⌫=废纸篓、⌘I=属性）",
+        "文件管理器：文件管理器语义不同（⌘⌫=废纸篓、⌘I=属性）",
         Some(json!({"only":c.应用档["文件管理器"]["匹配"]})),
         组装映射(&files, "文件管理器"),
     );
     push(
-        "generic：其余应用的兜底（只含显式条目）",
+        "通用：其余应用的兜底（只含显式条目）",
         None,
         组装映射(&explicit, "通用"),
     );
     if !generated.is_empty() {
         push(
-            "generic-sweep：泛化兜底（终端不参与）",
+            "泛化兜底：通用组合（终端不参与）",
             Some(json!({"not":term_match})),
             组装映射(&generated, "通用"),
         );
@@ -760,7 +796,7 @@ pub fn 编译配置(c: &行为清单, user: &Value, p: &探测结果) -> Result<
         }
         except.extend(字符串列表(&c.吞控制组合["例外应用"]));
         push(
-            "swallow：替换模式（终端与内嵌终端应用除外）",
+            "吞控制组合：替换模式（终端与内嵌终端应用除外）",
             Some(json!({"not":except})),
             swallow_map(&c.吞控制组合),
         );
@@ -897,8 +933,8 @@ pub fn 显示组合(combo: &Value) -> String {
 fn 生成行为文档(
     c: &行为清单, g: &生成结果, p: &探测结果, 备份: &std::path::Path
 ) -> String {
-    let macos: Vec<_> = c.条目.iter().filter(|e| e.归属 == "macos").collect();
-    let gnome: Vec<_> = c.条目.iter().filter(|e| e.归属 == "gnome").collect();
+    let macos: Vec<_> = c.条目.iter().filter(|e| e.归属 == "苹果风格").collect();
+    let gnome: Vec<_> = c.条目.iter().filter(|e| e.归属 == "系统默认").collect();
     let generated: Vec<_> = g.条目.iter().filter(|e| e.自动生成).collect();
     let mut doc = format!(
         "# 行为清单（自动生成）\n\n> 由 `配置/行为清单.json` + GNOME 键位探测结果生成；修改 JSON 后运行 `cargo 运行 生成 --文档 文档/03-行为清单.md`。\n\n- GNOME 已占用加速键：**{}** 个\n- 需要迁移的 GNOME 键位：**{}** 条\n- 归属分类：遵循 macOS **{}** 条 · 遵循 GNOME 默认 **{}** 条 · 泛化兜底 **{}** 条\n\n## 一、遵循 macOS 的键位（由 Mackey 改写）\n\n| macOS | 行为 | 触发 | 默认输出 | 终端输出 | 文件管理器 | 状态 | 冲突 / 备注 |\n|---|---|---|---|---|---|---|---|\n",
@@ -908,13 +944,17 @@ fn 生成行为文档(
         gnome.len(),
         generated.len()
     );
-    for e in g.条目.iter().filter(|e| !e.自动生成 && e.归属 == "macos") {
+    for e in g
+        .条目
+        .iter()
+        .filter(|e| !e.自动生成 && e.归属 == "苹果风格")
+    {
         let 状态 = match e.状态.as_str() {
-            "native" => "🟢 原生等价",
-            "mapped" => "🔵 需映射",
-            "relocated" => "🟠 需迁移 GNOME 键位",
-            "approx" => "🟡 近似",
-            "optin" => "⚪ 可选（默认关）",
+            "原生等价" => "🟢 原生等价",
+            "需映射" => "🔵 需映射",
+            "需迁移" => "🟠 需迁移 GNOME 键位",
+            "近似" => "🟡 近似",
+            "可选" => "⚪ 可选（默认关）",
             _ => "🔴 无法模拟",
         };
         doc += &format!(
@@ -1047,7 +1087,49 @@ mod 测试 {
         serde_json::from_str(crate::嵌入清单).unwrap()
     }
     #[test]
-    fn 旧版配置完全一致() {
+    fn 拒绝未汉化和未知的配置档及枚举() {
+        let 原始: Value = serde_json::from_str(crate::嵌入清单).unwrap();
+        for (字段, 值) in [
+            ("策略", "translate"),
+            ("策略", "未知"),
+            ("状态", "mapped"),
+            ("状态", "未知"),
+            ("归属", "macos"),
+        ] {
+            let mut 数据 = 原始.clone();
+            数据["条目"][0][字段] = json!(值);
+            assert!(
+                校验(&serde_json::from_value(数据).unwrap()).is_err(),
+                "{字段}={值}"
+            );
+        }
+        for 配置档 in ["generic", "terminal", "files", "未知"] {
+            let mut 数据 = 原始.clone();
+            数据["条目"][0]["目标组合"][配置档] = json!("C-C");
+            assert!(校验(&serde_json::from_value(数据).unwrap()).is_err());
+            let mut 数据 = 原始.clone();
+            数据["应用档"][配置档] = json!({"匹配":["应用"]});
+            assert!(校验(&serde_json::from_value(数据).unwrap()).is_err());
+        }
+        for 类别 in ["letter", "letter-shift", "digit-shift", "未知"] {
+            let mut 数据 = 原始.clone();
+            数据["泛化兜底"]["类别"] = json!([类别]);
+            assert!(校验(&serde_json::from_value(数据).unwrap()).is_err());
+        }
+        let mut 数据 = 原始.clone();
+        数据["泛化兜底"]["应用档"] = json!(["generic"]);
+        assert!(校验(&serde_json::from_value(数据).unwrap()).is_err());
+        let 清单: 行为清单 = serde_json::from_value(原始).unwrap();
+        校验(&清单).unwrap();
+        for 条目 in &清单.条目 {
+            assert!(!条目.标识.is_ascii(), "{}", 条目.标识);
+        }
+        for 迁移 in &清单.迁移规则 {
+            assert!(!迁移["标识"].as_str().unwrap().is_ascii());
+        }
+    }
+    #[test]
+    fn 映射与中文展示基准一致() {
         let g = 编译配置(&清单(), &json!({}), &探测结果::default()).unwrap();
         let expected: Value =
             serde_json::from_str(include_str!("../../测试/基准/xremap.json")).unwrap();

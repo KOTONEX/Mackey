@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#[path = "命令帮助.rs"]
+mod 命令帮助;
 use anyhow::{Result, ensure};
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 use mackey::{引擎下载, 服务, 焦点桥, 路径::路径集合, 配置生成};
 #[derive(Parser)]
 #[command(name="mackey",about="GNOME Wayland 上的 macOS 键位模拟",version=mackey::版本.trim())]
@@ -81,10 +83,11 @@ enum 子命令 {
     },
 }
 fn 执行() -> Result<()> {
-    let cli = 命令行::parse();
+    let mut 命令 = 命令帮助::汉化(命令行::command());
+    let 匹配 = 命令.clone().get_matches();
+    let cli = 命令行::from_arg_matches(&匹配)?;
     let Some(cmd) = cli.子命令 else {
-        use clap::CommandFactory;
-        命令行::command().print_help()?;
+        命令.print_help()?;
         println!();
         return Ok(());
     };

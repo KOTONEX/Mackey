@@ -243,7 +243,7 @@ pub fn 执行(根: &Path, 引擎: &Path) -> Result<()> {
             &["专属"][..],
         ),
     ] {
-        let 映射 = json!({"keymap":[{"name":"app-specific","application":{"only":[匹配]},"remap":{"Super-c":{"launch":["@动作探针@","动作探针","@探针@/专属"]}}},{"name":"generic","remap":{"Super-c":{"launch":["@动作探针@","动作探针","@探针@/兜底"]}}}]});
+        let 映射 = json!({"keymap":[{"name":"专属应用","application":{"only":[匹配]},"remap":{"Super-c":{"launch":["@动作探针@","动作探针","@探针@/专属"]}}},{"name":"通用","remap":{"Super-c":{"launch":["@动作探针@","动作探针","@探针@/兜底"]}}}]});
         运行用例(
             临时.path(),
             &程序,
@@ -287,7 +287,7 @@ pub fn 执行(根: &Path, 引擎: &Path) -> Result<()> {
             &["显式"][..],
         ),
     ] {
-        let 映射 = json!({"keymap":[{"name":"terminal-like","application":{"only":["/^kitty$/"]},"remap":{"Super-c":{"launch":["@动作探针@","动作探针","@探针@/显式"]}}},{"name":"generic","remap":{"Super-l":{"launch":["@动作探针@","动作探针","@探针@/通用"]}}},{"name":"generic-sweep","application":{"not":["/^kitty$/"]},"remap":{"Super-b":{"launch":["@动作探针@","动作探针","@探针@/泛化"]}}},{"name":"swallow","application":{"not":["/^kitty$/","/^code$/"]},"remap":{"C-c":{"launch":["@动作探针@","动作探针","@探针@/吞键"]}}}]});
+        let 映射 = json!({"keymap":[{"name":"终端","application":{"only":["/^kitty$/"]},"remap":{"Super-c":{"launch":["@动作探针@","动作探针","@探针@/显式"]}}},{"name":"通用","remap":{"Super-l":{"launch":["@动作探针@","动作探针","@探针@/通用"]}}},{"name":"泛化兜底","application":{"not":["/^kitty$/"]},"remap":{"Super-b":{"launch":["@动作探针@","动作探针","@探针@/泛化"]}}},{"name":"吞控制组合","application":{"not":["/^kitty$/","/^code$/"]},"remap":{"C-c":{"launch":["@动作探针@","动作探针","@探针@/吞键"]}}}]});
         运行用例(
             临时.path(),
             &程序,

@@ -123,7 +123,7 @@ pub fn 需要安装(
         return true;
     }
     fs::read(目标路径)
-        .map(|bytes| record["sha256"] != 计算摘要(&bytes))
+        .map(|bytes| record["摘要"] != 计算摘要(&bytes))
         .unwrap_or(true)
 }
 fn 创建下载客户端(超时: f64) -> Result<Client> {
@@ -203,7 +203,7 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
         );
         return Ok(());
     }
-    let downloads = 缓存.join("downloads");
+    let downloads = 缓存.join("下载");
     路径.保护(&downloads)?;
     fs::create_dir_all(&downloads)?;
     let mut last = String::new();
@@ -232,7 +232,7 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
             写入结构数据(
                 路径,
                 &状态目录,
-                &json!({"标签":标签,"架构":架构,"特性":特性,"实际特性":actual_feature,"资产":asset.file_name(),"地址":url,"sha256":计算摘要(&payload),"大小":size,"安装时间戳":SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),"目标路径":目标路径}),
+                &json!({"标签":标签,"架构":架构,"特性":特性,"实际特性":actual_feature,"资产":asset.file_name(),"地址":url,"摘要":计算摘要(&payload),"大小":size,"安装时间戳":SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),"目标路径":目标路径}),
             )?;
             for entry in fs::read_dir(&downloads)? {
                 let entry = entry?;
@@ -307,7 +307,7 @@ mod 测试 {
         let payload = 测试程序内容(62);
         fs::write(&目标路径, &payload).unwrap();
         fs::set_permissions(&目标路径, fs::Permissions::from_mode(0o755)).unwrap();
-        fs::write(&状态目录, json!({"标签":"v0.15.0","架构":"x86_64","特性":"gnome","实际特性":"full","sha256":计算摘要(&payload)}).to_string()).unwrap();
+        fs::write(&状态目录, json!({"标签":"v0.15.0","架构":"x86_64","特性":"gnome","实际特性":"full","摘要":计算摘要(&payload)}).to_string()).unwrap();
         assert!(!需要安装(
             &目标路径,
             &状态目录,

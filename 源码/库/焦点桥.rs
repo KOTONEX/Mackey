@@ -48,7 +48,7 @@ pub struct 选项 {
     pub 套接字: Option<PathBuf>,
     #[arg(long, default_value_t = 40)]
     pub 缓存毫秒: u64,
-    #[arg(long, default_value = "mackey-e2e-static")]
+    #[arg(long, default_value = "mackey-固定测试应用")]
     pub 固定应用: String,
     #[arg(long)]
     pub 测试: bool,
