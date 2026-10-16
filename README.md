@@ -1,261 +1,77 @@
-# Mackey —— 在 GNOME 上沿用 macOS 的快捷键
+# Mackey
 
-面向**同时使用 macOS 与 Linux** 的人：在 GNOME（Wayland）上，把 macOS 的 ⌘/⌥ 组合
-翻译成「当前应用在 Linux 下的等价按键」。终端与普通应用各用一套映射——**快捷键顺手，
-GNOME 自身功能也尽量原样保留**。本项目以 **AGPL-3.0-or-later** 发布，许可全文与第三方
-引用登记见 [LICENSE](LICENSE) 与 [文档/04-第三方许可证.md](文档/04-第三方许可证.md)。
+在 GNOME Wayland 上沿用 macOS 的快捷键：按焦点应用把 ⌘/⌥ 组合转换为 Linux 等价按键，
+为终端、文件管理器和通用应用分别生成规则。终端里的 ⌘C 用于复制，Ctrl+C 保留 SIGINT；
+不全局交换 Ctrl/Super。
 
-两条硬约束（写进代码校验，不是口号）：
+持久文件只写入 HOME，不修改系统配置、不安装 udev 规则、不调用 sudo，并拒绝 root。
+与 GNOME 冲突的键位先备份再迁移，卸载时还原。许可证为 [AGPL-3.0-or-later](LICENSE)。
 
-1. **不污染系统目录** —— 所有持久文件都在 `$HOME` 内；不写 `/etc`、`/usr`；不装 udev 规则；
-   不调用 `sudo`；拒绝以 root 运行。
-2. **不破坏 GNOME 功能** —— 不做 Ctrl/⌘ 全局交换；只接管清单里列出的键（含可选的
-   `吞控制组合` 点状替换）；键位冲突时优先把 GNOME 功能**迁移到新组合**而不是删除，
-   并且只在真的冲突时才改 dconf：改前备份、卸载还原。
+## 快速开始
 
-## 它解决的核心问题
-
-macOS 用户最容易踩的坑是**终端**：`⌘C` 在 macOS 终端里是「复制」，而在 Linux 终端里
-`Ctrl+C` 是 **SIGINT**——「把所有 ⌘ 一律映射成 Ctrl」会在终端里杀掉前台进程。
-Mackey 按焦点应用分三套映射：
-
-| 配置档 | 覆盖对象 | 差异示例 |
-| --- | --- | --- |
-| `终端` | GNOME Terminal / Console / Ghostty / kitty / Alacritty / WezTerm / foot / xterm… | ⌘C→`Ctrl+Shift+C`、⌘V→`Ctrl+Shift+V`、⌘W→`Ctrl+Shift+W`、⌘1..9→`Alt+1..9`；危险键显式吞掉（⌘D、⌘Z、⌘R，否则会变成 EOF / 挂起 / 反向搜索） |
-| `文件管理器` | Nautilus / Dolphin / Thunar / Nemo… | ⌘I→`Alt+Enter`（属性）、⌘⌫→`Delete`（移到废纸篓） |
-| `通用` | 其余应用（浏览器、编辑器等） | ⌘C→`Ctrl+C`、⌘←/→→`Home/End`、⌥←/→→`Ctrl+←/→`、⌘⇧[/]→`Ctrl+PgUp/PgDn`、⌘[/]→`Alt+←/→`；其余 ⌘+字母做泛化翻译，并与 GNOME 已占用键位自动互斥 |
-
-配置档及行为清单中的自有字段、标识和枚举值统一使用中文；生成规则的显示名称同样使用中文。
-xremap、GNOME、D-Bus 规定的字段和按键代码保留原名，详见[中文接口说明](文档/07-中文接口迁移.md)。
-
-完整键位表（按「遵循 macOS / 遵循 GNOME 默认」分类，并标注 GNOME 已占用键位的归属）见
-**[文档/03-行为清单.md](文档/03-行为清单.md)** —— 由清单自动生成，不是手抄文档。
-
-## 工作原理
-
-```
-物理键盘 ──evdev──▶ xremap ──uinput──▶ GNOME / 应用
-                     │ 需要按应用区分时 → focusd（socket）─D-Bus→ mackey-focus 扩展（上报焦点）
-                     └ modmap 负责把 ⌘/⌥ 摆到 macOS 的物理位置（可选）
-```
-
-选型理由、与其它方案（Kinto / keyd / input-remapper / 纯扩展 / XKB）的对比及验证记录，见
-**[文档/01-方案调研.md](文档/01-方案调研.md)** 与 **[文档/02-选型与架构.md](文档/02-选型与架构.md)**。
-
-## 安装
-
-### 一键安装（推荐）
-
-`mackey 安装` 会自动下载与你的 **指令集架构**匹配的 xremap 最新发布版本
-（Mackey 仅支持 GNOME Wayland，固定取 xremap 的 `系统默认` 特性），再安装 GNOME 扩展
-与 systemd 用户服务。持久文件全程只写 `$HOME`，不需要 sudo；焦点 socket 使用用户运行时目录。原生安装命令会先校验 GNOME 桌面，非 GNOME 时中止。
-本项目仅支持 GNOME Wayland，不支持 X11；程序不检测或拦截 X11 会话。
-
-镜像更新后保留 HOME 的系统无需重装。启用后的焦点桥会等待 GNOME 扩展就绪，失败每两秒重试；
-确认来源和套接字可用后才启动引擎。焦点桥故障时引擎联停，桥接恢复后自动重新启动引擎。
-`mackey 停用` 会停用两项服务，保持关闭。权限或配置错误仍需按体检结果处理。
-故障证据与隔离回归见 [2.4.1 登录恢复修复](文档/13-2.4.1登录恢复修复.md)。
-
-从 Python 版更新时，请先运行该版本的卸载脚本，再安装新版；不兼容旧配置接口。详见 [重新安装说明](文档/07-中文接口迁移.md)。
-
-源码使用 Cargo 入口（需要 Rust/Cargo、C 编译器、原生 TypeScript 编译器 `tsc`）；发行包解压后直接执行 `./mackey 安装`，无需编译器、Python 或仓库。
+从 [发行页](https://github.com/KOTONEX/Mackey/releases/latest) 下载对应 x86_64 或 aarch64 的
+Linux 二进制包，核对同页的 SHA-256 清单，解压后在包目录执行：
 
 ```bash
-cargo 运行 安装          # 可选：--不下载 跳过下载、--保持运行 保留旧服务
+./mackey 安装
 ```
 
-安装**可重复执行且幂等**：同一版本已有引擎 / 配置 / 服务时，会按当前指令集架构重新
-对齐引擎、重写服务与扩展、清理陈旧 socket 与自启软链，结果与「全新安装」一致
-（`--保持运行` 可保留正在运行的服务；`config.json` 里已有的字段值会保留，缺失字段自动补齐）。
-
-安装命令结尾会提示必须做的两步：加入 `input` 组（唯一需要提权的动作）并**重新登录**；
-重新登录后执行 `mackey 体检 && mackey 应用` 即可。
-
-> `安装` 会把命令行入口装到 `${XDG_BIN_HOME:-~/.local/bin}/mackey`。若该目录不在 PATH：
-> fish 执行 `fish_add_path ~/.local/bin`；bash 把 `export PATH="$HOME/.local/bin:$PATH"` 写进
-> `~/.bashrc`。在此之前可以直接使用仓库内的 `cargo 运行`。
-
-### 手动安装（等价的分步）
+安装会下载 xremap、生成配置并写入 GNOME 扩展和用户服务，**不会自动启动**。
+确认当前会话具备 input 组权限、`/dev/uinput` 可写，并重新登录以加载扩展；然后执行：
 
 ```bash
-# 1) 唯一需要提权的动作：加入 input 组（读取 /dev/input 的唯一办法），然后重新登录
-sudo usermod -aG input "$USER"
-
-# 2) 下载引擎（也可以 cargo install xremap --features gnome，或手动放到 .vendor/xremap）
-cargo 运行 获取引擎
-
-# 3) 生成配置（自动识别键盘配列）
-cargo 运行 初始化
-
-# 4) 安装扩展与 systemd 用户服务（全部在 $HOME 内）
-cargo 运行 安装 --不下载
-
-# 5) 重新登录（Wayland 下新装的 GNOME 扩展必须重新登录才会被加载），然后：
-cargo 运行 体检      # 体检
-cargo 运行 应用       # 迁移冲突键位（先备份）+ 启用
+mackey 体检
+mackey 应用
+mackey 状态
 ```
 
-## 文件落点（遵循 XDG）
+默认命令入口是 `~/.local/bin/mackey`；若不在 PATH，可使用这个完整路径。
+源码安装、权限说明、升级、卸载及故障排查见 [使用指南](文档/使用指南.md)。
+发行包运行无需 Rust、TypeScript 编译器或源码目录。
 
-| 内容 | 位置 |
+## 映射范围
+
+| 配置档 | 典型行为 |
 | --- | --- |
-| 命令行入口（指向独立 Rust 二进制） | `${XDG_BIN_HOME:-~/.local/bin}/mackey` |
-| 配置（`config.json`、生成的 `xremap.json`、迁移计划、键位备份） | `${XDG_CONFIG_HOME:-~/.config}/mackey/` |
-| 引擎二进制（`获取引擎` 下载） | `${XDG_DATA_HOME:-~/.local/share}/mackey/bin/xremap` |
-| 下载与解压的中间产物 | `${XDG_CACHE_HOME:-~/.cache}/mackey/` |
-| 安装记录（标签 / 来源地址 / 摘要） | `${XDG_STATE_HOME:-~/.local/state}/mackey/engine.json` |
-| GNOME 扩展 | `${XDG_DATA_HOME:-~/.local/share}/gnome-shell/extensions/mackey-focus@kotonex` |
-| systemd 用户服务 | `${XDG_CONFIG_HOME:-~/.config}/systemd/user/mackey-{focusd,engine}.service` |
-| 焦点桥 socket | `${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mackey-focus.sock` |
+| 终端 | ⌘C/⌘V → Ctrl+Shift+C/V；对可能变成 EOF、挂起或反向搜索的组合单独处理 |
+| 文件管理器 | ⌘I → 属性；⌘⌫ → 移到废纸篓 |
+| 通用 | ⌘C → Ctrl+C；⌘←/→ → Home/End；⌥←/→ → Ctrl+←/→ |
 
-`XDG_*` 被显式设置到 `$HOME` 之外时，本工具会拒绝写入——硬约束优先于 XDG。
+完整映射以 [行为清单](文档/03-行为清单.md) 为准，由 [唯一事实源](配置/行为清单.json) 生成。
+泛化规则避开 GNOME 已占用组合；吞控制组合排除终端和清单中的 IDE 例外。
+自有字段与显示名采用中文，外部协议键及按键代码保留原名。
 
-## 常用命令
-
-| 命令 | 作用 |
-| --- | --- |
-| `mackey 状态` | 当前状态（会话 / 引擎 / 焦点桥 / 扩展 / 服务） |
-| `mackey 体检` | 体检：权限、引擎、扩展、焦点来源、冲突、历史遗留的一键排查 |
-| `mackey 版本` | 显示版本与引擎路径（等价于 `mackey --version`） |
-| `mackey 获取引擎` | 下载与指令集架构匹配的 xremap 最新发布版本（固定 `系统默认` 特性；`--标签` 指定版本，`--输出计划` 只看计划） |
-| `mackey 探测` | 只读地打印 GNOME 已占用键位与需要迁移的项 |
-| `mackey 生成` | 重新生成 xremap 配置 / 迁移计划 / 行为清单 |
-| `mackey 应用` | 生成 + 迁移键位（带备份）+ 重启服务 |
-| `mackey 还原` | 还原 GNOME 键位 |
-| `mackey 停用` | 停用（键盘立刻回到 Linux 原生行为） |
-| `mackey 检查` | 完整离线检查：静态检查、差分校验、隔离安装与卸载、① 原生单元（focusd + 生成器 + 引擎下载，不连 D-Bus）② 扩展契约（隔离带加载真实 `extension.js` + 真实 D-Bus 往返）端到端测试另行运行 `cargo 测试 --端到端`，需要虚拟键盘权限 |
-| `mackey 卸载` | 卸载并还原；默认清理配置/缓存；`--保留配置` 保留它们，`--预演` 只列清单，`--确认执行` 免确认 |
-
-一键卸载：`mackey 卸载`（默认清理配置，可加 `--保留配置` / `--预演` / `--确认执行`）。
-
-## 配置
-
-配置文件：`${XDG_CONFIG_HOME:-~/.config}/mackey/config.json`
-
-```jsonc
-{
-  "修饰键布局": "苹果",   // 苹果 = ⌘ 就是 Super 键；微软 = 交换 Alt/Win，把 ⌘ 摆到空格旁那颗键
-  "device": { "only": [] },     // 只重映射指定键盘（名字子串），留空 = 所有键盘
-  "keypress_delay_ms": 0,       // 个别应用对合成按键不敏感时可设 20
-  "引擎": ""                  // 自定义 xremap 路径（默认用 XDG 数据目录里下载的那份）
-}
-```
-
-改完执行 `mackey 应用`，它会重新生成配置并重启服务。
-
-## 目录结构
-
-```
-Cargo.toml / Cargo.lock            Rust 应用依赖与锁文件
-源码/程序/主程序.rs                       clap 命令行入口
-源码/库/配置生成.rs                   清单 + dconf → 配置、迁移计划、行为清单
-源码/库/焦点桥.rs                      原生 zbus D-Bus → xremap socket
-源码/库/引擎下载.rs                     HTTPS 下载、ZIP/ELF 校验、原子安装
-源码/库/键盘识别.rs                   键盘识别与布局建议
-源码/库/服务.rs                    初始化、安装、备份迁移、服务管理、卸载
-源码/库/路径.rs                      XDG 路径、HOME 边界检查、原子写入
-.github/流水线.rs                   无外部库依赖的 Rust 工具链准备器
-配置/行为清单.json             行为唯一事实源（编译时嵌入）
-扩展/mackey-focus@kotonex/    GNOME Shell 扩展（TS，构建为 JS 后嵌入）
-测试/虚拟键盘.rs          Rust uinput 虚拟键盘（仅测试）
-测试/命令行.rs                     独立二进制与 socket 集成测试
-测试/基准/                   旧生成器输出，用于差分回归
-.github/workflows/                Rust 检查、测试与双架构二进制发布
-```
-
-原生流水线与扩展版本兼容说明见 [2.4.2 报告](文档/14-2.4.2原生流水线与扩展版本.md)。
-
-## 环境要求
-
-| 项 | 说明 |
-| --- | --- |
-| 桌面 | GNOME（Wayland）；不支持 X11 会话与更旧版本 GNOME（GNOME 50 已移除 X11，扩展 API 变动频繁） |
-| 引擎 | xremap ≥ 0.15；`mackey 安装` / `mackey 获取引擎` 会按指令集架构（x86_64/aarch64）自动下载 `系统默认` 特性的发布版本 |
-| 构建 | Rust 稳定版、Cargo、C 编译器、原生 TypeScript 编译器（`tsc`）；`cargo build --locked --release --bin mackey` 构建独立二进制 |
-| 运行 | GSettings、systemd 用户会话、GNOME 扩展；不依赖 Python 或源码目录 |
-| 权限 | `input` 组（读输入设备）+ `/dev/uinput` 可写（合成按键）；部分镜像（Bazzite / Bluefin / SteamOS 等预装 ydotool）默认已具备 |
-
-CI 直接获取微软 GitHub 最新正式发行的原生 `tsc` 并校验 SHA-256，本地和 CI 构建均无需 Node/npm。本地构建方式见 [贡献指南](CONTRIBUTING.md#typescript-资源)。
-
-## 故障排查
-
-- **按键没变化**：`mackey 状态` 看引擎服务是否在跑；`mackey 日志 50` 看引擎日志。
-- **终端里 ⌘C 变成了杀进程**：说明焦点来源没生效（`体检` 里那一项是红色）。先确认扩展是否
-  ACTIVE——新装扩展要**重新登录**。这是本方案唯一「静默降级会变危险」的地方，所以专门做了
-  红色告警。
-- **扩展一直不是 ACTIVE**：Wayland 下 GNOME 不会热扫描扩展目录（实测复制 / 原子 mv 都无效），
-  必须重新登录；`gnome-extensions enable <uuid>` 之后仍未加载，就是没重新登录。
-- **引擎服务起不来（journal 报 `No input devices`）**：`input` 组是加在会话建立之后才写入
-  `/etc/group` 的，重新登录即可（用户服务只在登录时继承该附加组）。绝不要给用户服务写
-  `SupplementaryGroups=`：用户管理器没有 `CAP_SETGID`，写了会 `216/GROUP` 崩溃循环。
-- **和残留的旧方案冲突**：用 `systemctl --user list-units` 检查是否还在运行其它键位重映射服务，避免同时抓取键盘。
-
-## 明确不做
-
-- 不做 Ctrl↔⌘ 全局交换（modmap 层面；那会让终端失去 SIGINT、摧毁 readline 与作业控制）。
-- 只做**点状替换**：`配置/行为清单.json` 的 `吞控制组合` 列出的组合（当前 ⌃C/⌃X/⌃V/⌃Z/⌃A）
-  在非例外应用里被吞掉，只保留 ⌘ 版本。例外名单 = 终端配置档 + `例外应用`
-  （默认含 VS Code / JetBrains / GNOME Builder / Emacs 等带内嵌终端的应用），所以真实终端与
-  内嵌终端里的 ⌃C 仍是 SIGINT。自己的编辑器没被覆盖时，把它的 wm_class 正则加进
-  `例外应用` 再 `mackey 生成` 即可。
-- 不接管 `⌃←/⌃→/⌃↑/⌃↓`（在 Linux 上是「按词移动 / 按段落移动」，接管代价大于收益；
-  `⌃↑/⌃↓` 在清单里留作可选）。
-- 不模拟 macOS 菜单栏体系（「按住 ⌘ 显示快捷键提示」「⌥⌘Esc 强制退出对话框」）。
-- 不写任何系统目录、不需要 root、不装 udev 规则。
-
-## 开发
-
-日常版本控制使用 Jujutsu（`jj`），`主线` 书签对应 GitHub 同名分支；
-采用共置 Git 后端，操作步骤见[贡献指南](CONTRIBUTING.md#版本控制)。
-
-Rust 工具链和 Edition 跟随最新稳定版升级，不设永久版本约束；应用版本以 `Cargo.toml` 为唯一事实源。
+## 常用操作
 
 ```bash
-cargo 检查                # 完整离线验收：静态检查、差分、Rust 与真实 GJS 契约
-cargo 测试                # 差分、Rust、隔离安装卸载与真实 GJS 契约
-cargo 测试 --端到端       # 额外运行虚拟键盘测试，需要设备权限
-cargo 格式化              # 格式化 Rust 源码
-cargo 打包                # 构建本机发行包并验证解压后的独立二进制
-cargo 运行 <子命令>       # 从源码构建并执行应用命令
+mackey 状态        # 查看两项服务、引擎路径和扩展状态
+mackey 日志 50     # 查看焦点桥与引擎日志
+mackey 探测        # 只读检查 GNOME 键位冲突
+mackey 停用        # 停用服务，不清除已迁移的 GNOME 键位
+mackey 卸载 --预演 # 只列出卸载范围
 ```
 
-开发与交付约定见 [项目规范](文档/项目规范.md)。见 [CONTRIBUTING.md](CONTRIBUTING.md)（含中文提交类型约定）与 [AGENTS.md](AGENTS.md)
-（给自动化代理的项目说明）。提交前请跑 `cargo 检查`。
+用户配置位于 `~/.config/mackey/config.json`；修改后执行 `mackey 应用`。
+布局、设备过滤和路径覆盖见 [配置说明](文档/07-配置说明.md)。
 
-Rust 主程序由 `cargo check`、`rustfmt` 和 `clippy` 检查；
-GNOME 扩展、契约测试与基类桩均以 TypeScript 编写，手写的 `类型声明/GJS环境.d.ts` 描述最小 GJS 类型面。
-`源码/构建.rs` 自动运行严格模式的 `tsc`，将生成的 JavaScript 嵌入二进制；安装、测试和发布 ZIP 共用这份产物。
-两者统一由 `cargo 检查` 驱动，缺少 tsc 或类型错误会明确失败。
-源码树不维护 JS 副本；已发布的二进制不需要编译器或源码目录。
-实现与部署说明见 [文档/05-Rust实现.md](文档/05-Rust实现.md)。
+## 文档与开发
 
-## 许可证
+| 目的 | 入口 |
+| --- | --- |
+| 安装、使用、升级与排错 | [使用指南](文档/使用指南.md) |
+| 布局、配置字段、清单及兼容边界 | [配置说明](文档/07-配置说明.md) |
+| 数据流、焦点保护与持久化 | [架构与边界](文档/02-架构与边界.md) |
+| 开发环境、检查和提交 | [贡献指南](CONTRIBUTING.md) |
+| 构建、打包与发行 | [构建与发行](文档/05-构建与发行.md) |
+| 所有当前说明、许可及历史记录 | [文档索引](文档/README.md) |
 
-本项目以 **AGPL-3.0-or-later** 发布，全文见 [LICENSE](LICENSE)；第三方引用与兼容性说明见
-[文档/04-第三方许可证.md](文档/04-第三方许可证.md)。
+主程序、安装卸载、测试和流水线编排使用 Rust；GNOME 扩展以 TypeScript 维护，
+构建时编译并嵌入二进制。源码与 CI 不引入 Node/npm。
 
-- 引擎 [xremap](https://github.com/xremap/xremap) 是 MIT，本仓库以独立二进制方式使用，
-  未修改其源码。
-- GNOME 扩展独立实现了 [xremap-gnome](https://github.com/xremap/xremap-gnome)
-  （Copyright (C) 2022 Takashi Kokubun，GPLv2+）的 `com.k0kubun.Xremap` D-Bus 契约；
-  GPLv2+ 可升级为 GPLv3，而 GPLv3 与 AGPLv3 可依 AGPLv3 第 13 节组合，
-  因此本仓库整体采用 AGPL-3.0-or-later。
+```bash
+cargo 检查
+cargo 运行 <子命令>
+```
 
-## 运行与部署
-
-配置文件路径、GNOME 扩展 UUID、服务名称与 xremap 协议遵循外部约定；自有命令和参数统一为中文。安装时把清单、扩展和版本嵌入的
-Rust 二进制复制到 XDG 数据目录；安装后移动或删除源码目录不会影响服务。源码中的行为清单修改后
-需要重新编译并安装；`mackey 生成 --行为清单 <文件>` 可临时使用外部清单。
-
-持久文件均限制在 HOME 下，路径检查解析软链接与 `..`。唯一运行时例外是
-`/run/user/$UID/mackey-focus.sock`（权限 0600），用于与 xremap 通信；自定义 socket 必须在 HOME 下。
-用户态虚拟键盘测试只访问 `/dev/uinput`，不安装系统规则。部署细节和验证范围见
-[文档/05-Rust实现.md](文档/05-Rust实现.md)。
-
-中文接口及 Python 版卸载重装说明见 [文档/07-中文接口迁移.md](文档/07-中文接口迁移.md)。
-
-2.4.0 真实虚拟键盘复测、服务恢复及发行验收见 [端到端与发行报告](文档/12-2.4.0端到端与发行报告.md)；首次安装过程见 [历史本机报告](文档/10-本机端到端测试报告.md)。
-
-发行渠道：只有属于 `主线` 的提交发布正式发行版，其他分支或标签一律标记为预发行。
-
-完整项目审查的修复、回归和未执行项见 [审查记录](文档/11-完整项目审查.md)。
+开发约束集中在 [项目规范](文档/项目规范.md)，代理入口见 [AGENTS.md](AGENTS.md)。
+第三方来源及许可登记见 [第三方许可证](文档/04-第三方许可证.md)。
