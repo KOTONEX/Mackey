@@ -9,7 +9,7 @@
 
 | 工具 | 用途 |
 | --- | --- |
-| Jujutsu（`jj`）与 Git | 日常提交、GitHub 互操作、发行日志与源码归档 |
+| Git | 日常提交、GitHub 互操作、发行日志与源码归档 |
 | Rust/Cargo、rustfmt、Clippy、C 编译器 | 原生业务、静态检查及虚拟键盘程序 |
 | 原生 ELF TypeScript 编译器 `tsc` | 扩展、契约和基类桩的严格编译 |
 | `gjs`、`dbus-run-session` | 真实扩展的隔离 D-Bus 契约 |
@@ -20,45 +20,42 @@
 
 将原生 `tsc` 所在目录加入 PATH；构建拒绝脚本启动器，无需 Node/npm。
 CI 的原生获取方式及嵌入资源见 [构建与发行](文档/05-构建与发行.md#typescript-与版本资源)。
-本地检查以普通用户运行，临时目录统一放在项目的 `builddir/临时/`，由 `.gitignore` 同时供 jj/Git 忽略，不安装 udev 规则或调用 sudo。
+本地检查以普通用户运行，临时目录统一放在项目的 `builddir/临时/`，由 `.gitignore` 忽略，不安装 udev 规则或调用 sudo。
 临时 CI runner 的系统开发依赖安装例外见项目规范。
 
 ## 版本控制
 
-日常使用 Jujutsu 的共置 Git 后端，普通贡献者和 CI 仍可只用 Git 构建。
+版本控制统一使用 Git，普通贡献者和 CI 不依赖其他版本控制工具。
 获取新副本：
 
 ```bash
-jj git clone --colocate https://github.com/KOTONEX/Mackey.git Mackey
+git clone https://github.com/KOTONEX/Mackey.git Mackey
 cd Mackey
 ```
 
-已有 Git 副本只需初始化一次：
+已有副本无需额外初始化；若不在 `主线`，先执行 `git switch 主线`。`主线` 默认跟踪
+`origin/主线`；没有跟踪关系时执行 `git branch --set-upstream-to=origin/主线 主线`。
 
-```bash
-jj git init --colocate
-jj bookmark track '"主线"@origin'
-```
-
-用 `jj config get user.name` 和 `jj config get user.email` 检查身份；缺失时通过
-`jj config set --repo user.name "你的名字"` 与对应 `user.email` 设置仓库级值。
+用 `git config user.name` 和 `git config user.email` 检查身份；缺失时通过
+`git config user.name "你的名字"` 与对应 `user.email` 设置仓库级值。
 不要为了本项目修改全局身份。
 
 ```bash
-jj status
-jj diff
-jj git fetch --remote origin
-# 编辑、检查；无关改动先隔离
+git status
+git diff
+git fetch origin
+# 编辑、检查；无关改动分开暂存
 cargo 检查
-jj commit -m "文档: 说明本次修改"
-jj show -r @-
-jj bookmark set 主线 -r @-
-jj git push --remote origin --bookmark 主线
+git add <路径>
+git diff --cached
+git commit -m "文档: 说明本次修改"
+git show --stat --oneline HEAD
+git push origin 主线
 ```
 
-Jujutsu 自动快照，没有 `git add`。`jj commit` 后 `@` 为新的空工作副本，完成提交在 `@-`。
-核对内容后才移动书签；远程有并发更新时先处理差异，不强推公开历史。
-交付时工作副本无差异，`主线`、远程书签与 Git `HEAD` 对应同一完成提交。
+核对暂存内容后才提交；远程有并发更新时先处理差异，不强推公开历史。
+仅对尚未推送的本地提交使用 `git pull --rebase origin 主线`，已公开历史保持追加提交。
+交付时工作区无差异，`主线`、`origin/主线` 与 `HEAD` 对应同一完成提交。
 
 ## 检查与测试
 
