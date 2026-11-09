@@ -1,0 +1,62 @@
+{
+    "说明": "随仓库分发的 @girs 精简类型声明快照来源。版本升级时同步更新本文件、说明.md 与 文档/04-第三方许可证.md。",
+    "生成日期": "2026-11-09",
+    "包": [
+        {
+            "package": "@girs/gnome-shell",
+            "version": "51.0.1",
+            "license": "MIT",
+            "tarball": "https://registry.npmjs.org/@girs/gnome-shell/-/gnome-shell-51.0.1.tgz",
+            "integrity": "sha512-gBOW/BCQuroUbqyQgq9qUmq57vdXZKZwRIwgsQ+WIaN0mBmPOtqfeep7xkNwTHpM4wQ6cysZuEsLnjxVtPeCMQ==",
+            "upstream": "git+https://github.com/gjsify/gnome-shell.git"
+        },
+        {
+            "package": "@girs/gjs",
+            "version": "5.6.0",
+            "license": "MIT",
+            "tarball": "https://registry.npmjs.org/@girs/gjs/-/gjs-5.6.0.tgz",
+            "integrity": "sha512-34ca6WPL+5P0SrLiDXSDKxxdf7hO1fqiDcOfIMz+JjEAcifYdTfiilkx1479dFaxRQFfdwHFcM8cxAeoKRBGpQ==",
+            "upstream": "git+https://github.com/gjsify/types.git"
+        },
+        {
+            "package": "@girs/gio-2.0",
+            "version": "5.6.0",
+            "license": "MIT",
+            "tarball": "https://registry.npmjs.org/@girs/gio-2.0/-/gio-2.0-5.6.0.tgz",
+            "integrity": "sha512-WmAlOC3ywWbPHd1It1JBDmC9xLqwcsLrX30nCMoCn66YgsMS6TBnW/UW/wwErcmjIwdd45dzYYuWfkoUrQ3rQw==",
+            "upstream": "git+https://github.com/gjsify/types.git"
+        },
+        {
+            "package": "@girs/glib-2.0",
+            "version": "5.6.0",
+            "license": "MIT",
+            "tarball": "https://registry.npmjs.org/@girs/glib-2.0/-/glib-2.0-5.6.0.tgz",
+            "integrity": "sha512-BLeEi8a6+d1H3ViqfAekKApp2bje35aQuylS23k8jBRXbEjdSBQTjnHooCoH7usiA/Wjwf5jb/Ladb2gpN6EUw==",
+            "upstream": "git+https://github.com/gjsify/types.git"
+        },
+        {
+            "package": "@girs/gobject-2.0",
+            "version": "5.6.0",
+            "license": "MIT",
+            "tarball": "https://registry.npmjs.org/@girs/gobject-2.0/-/gobject-2.0-5.6.0.tgz",
+            "integrity": "sha512-Fpx6bQp+v9+QG2H1VWnCulFqVeI//KMZ2+SITKkGeituBAdkT6GOy71ZnRqS6uxPOsr+fMzL7mb4X2/b5sItCA==",
+            "upstream": "git+https://github.com/gjsify/types.git"
+        },
+        {
+            "package": "@girs/gmodule-2.0",
+            "version": "5.6.0",
+            "license": "MIT",
+            "tarball": "https://registry.npmjs.org/@girs/gmodule-2.0/-/gmodule-2.0-5.6.0.tgz",
+            "integrity": "sha512-15oQ8Zl8cNZA9pQu8rFsaiX5wO3L/6HVBvWo6NRVMoiteEeKvz8DEIRE1I0+jeoLUSROleW2uzWOwd+nFTbJfA==",
+            "upstream": "git+https://github.com/gjsify/types.git"
+        },
+        {
+            "package": "@girs/cairo-1.0",
+            "version": "5.6.0",
+            "license": "MIT",
+            "tarball": "https://registry.npmjs.org/@girs/cairo-1.0/-/cairo-1.0-5.6.0.tgz",
+            "integrity": "sha512-ezZPwEWFjYULtWvMAkx5KPEyixgU7S2dueznV95mgHjYEQNCo1kLUugFMFD2wpiLc6QLARwEkpinbQD2mDzGbw==",
+            "upstream": "git+https://github.com/gjsify/types.git"
+        }
+    ]
+}

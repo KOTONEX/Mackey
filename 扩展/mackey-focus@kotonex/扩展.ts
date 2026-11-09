@@ -15,7 +15,6 @@
 // 安全边界：仅读取焦点窗口元数据；不抓键、不注入按键、不写任何文件。
 
 import Gio from 'gi://Gio';
-import type { DBusExportedObject } from 'gi://Gio';
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -84,7 +83,7 @@ const 焦点桥 = class {
 };
 
 export default class 焦点扩展 extends Extension {
-    private _导出对象: DBusExportedObject | null = null;
+    private _导出对象: Gio.DBusExportedObject | null = null;
     enable(): void {
         this._导出对象 = Gio.DBusExportedObject.wrapJSObject(接口定义, new 焦点桥());
         // 注意：在 gnome-shell 进程内导出，因此挂在 org.gnome.Shell 这个总线名下，

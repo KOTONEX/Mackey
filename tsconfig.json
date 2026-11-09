@@ -18,7 +18,12 @@
         "noFallthroughCasesInSwitch": true,
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": false,
-        "noUncheckedIndexedAccess": true
+        "noUncheckedIndexedAccess": true,
+        "paths": {
+            "@girs/*": [
+                "./类型声明/girs/*"
+            ]
+        }
     },
     "include": [
         "扩展/**/*.ts",

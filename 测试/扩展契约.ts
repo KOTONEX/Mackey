@@ -15,7 +15,6 @@
 //
 // 用法：gjs -m <编译输出>/测试/扩展契约.js <被改写过的 extension.js 路径>
 import Gio from 'gi://Gio';
-import type { DBusReply } from 'gi://Gio';
 import GLib from 'gi://GLib';
 import System from 'system';
 
@@ -39,12 +38,14 @@ function 调用(总线名: string, 方法: string): string {
     // 注意：被调用的对象就在本进程里，所以必须用**异步**调用并驱动主循环，
     // 否则同步 call_sync 会把自己阻塞死（进来的方法调用永远没机会被派发）。
     const 主循环 = GLib.MainLoop.new(null, false);
-    const 结果: {回复: DBusReply | null; 错误: unknown} = {回复: null, 错误: null};
+    const 结果: {回复: GLib.Variant | null; 错误: unknown} = {回复: null, 错误: null};
     Gio.DBus.session.call(
         总线名, 对象路径, 接口名称, 方法, null, null,
         Gio.DBusCallFlags.NONE, 2000, null,
         (来源, 反馈) => {
             try {
+                if (!来源)
+                    throw new Error('D-Bus 调用缺少来源连接');
                 结果.回复 = 来源.call_finish(反馈);
             } catch (错误) {
                 结果.错误 = 错误;
@@ -56,7 +57,10 @@ function 调用(总线名: string, 方法: string): string {
         throw 结果.错误;
     if (!结果.回复)
         throw new Error('D-Bus 未返回回复');
-    const 文本 = 结果.回复.deepUnpack()[0];
+    const 解包: unknown = 结果.回复.deepUnpack<unknown[]>();
+    if (!Array.isArray(解包))
+        throw new Error('D-Bus 回复不是元组');
+    const 文本 = 解包[0];
     if (typeof 文本 !== 'string')
         throw new Error('D-Bus 回复必须是字符串');
     return 文本;
@@ -96,9 +100,11 @@ const 实例 = new 模块.default({});
 const 名称归属 = Gio.DBus.session.call_sync(
     'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
     'RequestName', new GLib.Variant('(su)', ['org.gnome.Shell', 0]), null,
-    Gio.DBusCallFlags.NONE, 2000, null).deepUnpack()[0];
+    Gio.DBusCallFlags.NONE, 2000, null).deepUnpack<unknown[]>()[0];
 检查('隔离会话取得 org.gnome.Shell 名称', 名称归属 === 1 || 名称归属 === 4);
 const 总线名称 = Gio.DBus.session.get_unique_name();
+if (!总线名称)
+    throw new Error('无法取得本进程总线名');
 print(`  本进程总线名：${总线名称}`);
 
 let 载荷 = "";
@@ -135,6 +141,8 @@ const 桥进程 = Gio.Subprocess.new(
 const 桥主循环 = GLib.MainLoop.new(null, false);
 桥进程.communicate_utf8_async(null, null, (子进程, 反馈) => {
     try {
+        if (!子进程)
+            throw new Error('子进程通信缺少来源');
         const [, 输出, 错误输出] = 子进程.communicate_utf8_finish(反馈);
         检查('Rust 焦点桥 可调用真实扩展', 子进程.get_successful(), 错误输出 || '');
         const 焦点: unknown = JSON.parse(输出 || 'null');
