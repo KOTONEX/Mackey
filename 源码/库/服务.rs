@@ -294,7 +294,7 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
     }
     std::os::unix::fs::symlink(&binary, &路径.命令入口)?;
     println!(
-        "✓ 已安装 Rust 二进制、扩展与用户服务\n重新登录以加载 GNOME 扩展及 input 组权限，再运行 mackey 体检 && mackey 应用\n若尚未加入 input 组，请在本机手动运行 sudo usermod -aG input <用户名>，然后重新登录\n彻底卸载：mackey 卸载"
+        "✓ 已安装 Rust 二进制、扩展与用户服务\n重新登录以加载 GNOME 扩展及 input 组权限，再运行 mackey 应用（复查用 mackey 体检）\n若尚未加入 input 组，请在本机手动运行 sudo usermod -aG input <用户名>，然后重新登录\n彻底卸载：mackey 卸载"
     );
     Ok(())
 }
