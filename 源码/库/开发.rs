@@ -10,7 +10,7 @@ pub fn 仓库() -> Result<PathBuf> {
     let 根 = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     ensure!(
         根.join("Cargo.toml").is_file() && 根.join("源码/库/入口.rs").is_file(),
-        "该开发命令需要 Mackey 源码仓库"
+        "该开发命令需要麦奇（Mackey）源码仓库"
     );
     let 路径 = 路径集合::发现()?;
     路径.保护(&根)

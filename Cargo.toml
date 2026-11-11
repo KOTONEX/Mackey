@@ -6,7 +6,7 @@ version = "2.5.0"
 edition = "2024"
 publish = false
 license = "AGPL-3.0-or-later"
-description = "GNOME Wayland 上的 macOS 键位模拟"
+description = "麦奇（Mackey）：GNOME Wayland 上的 macOS 键位模拟"
 default-run = "mackey"
 build = "源码/构建.rs"
 

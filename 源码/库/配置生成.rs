@@ -830,7 +830,7 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<生成结果> {
     };
     let result = 编译配置(&c, &user, &p)?;
     println!(
-        "Mackey 生成报告\n布局           : {}\n清单条目       : {} 条显式 + {} 条泛化兜底\nGNOME 已占用   : {} 个加速键\n需要迁移 GNOME 键位 {} 条",
+        "麦奇生成报告\n布局           : {}\n清单条目       : {} 条显式 + {} 条泛化兜底\nGNOME 已占用   : {} 个加速键\n需要迁移 GNOME 键位 {} 条",
         user["修饰键布局"].as_str().unwrap_or("苹果"),
         c.条目.len(),
         result.条目.len() - c.条目.len(),
@@ -937,7 +937,7 @@ fn 生成行为文档(
     let gnome: Vec<_> = c.条目.iter().filter(|e| e.归属 == "系统默认").collect();
     let generated: Vec<_> = g.条目.iter().filter(|e| e.自动生成).collect();
     let mut doc = format!(
-        "# 行为清单（自动生成）\n\n> 由 `配置/行为清单.json` + GNOME 键位探测结果生成；修改 JSON 后运行 `cargo 运行 生成 --文档 文档/03-行为清单.md`。\n\n- GNOME 已占用加速键：**{}** 个\n- 需要迁移的 GNOME 键位：**{}** 条\n- 归属分类：遵循 macOS **{}** 条 · 遵循 GNOME 默认 **{}** 条 · 泛化兜底 **{}** 条\n\n## 一、遵循 macOS 的键位（由 Mackey 改写）\n\n| macOS | 行为 | 触发 | 默认输出 | 终端输出 | 文件管理器 | 状态 | 冲突 / 备注 |\n|---|---|---|---|---|---|---|---|\n",
+        "# 行为清单（自动生成）\n\n> 由 `配置/行为清单.json` + GNOME 键位探测结果生成；修改 JSON 后运行 `cargo 运行 生成 --文档 文档/03-行为清单.md`。\n\n- GNOME 已占用加速键：**{}** 个\n- 需要迁移的 GNOME 键位：**{}** 条\n- 归属分类：遵循 macOS **{}** 条 · 遵循 GNOME 默认 **{}** 条 · 泛化兜底 **{}** 条\n\n## 一、遵循 macOS 的键位（由麦奇改写）\n\n| macOS | 行为 | 触发 | 默认输出 | 终端输出 | 文件管理器 | 状态 | 冲突 / 备注 |\n|---|---|---|---|---|---|---|---|\n",
         p.已占用.len(),
         g.迁移计划.len(),
         macos.len(),
@@ -974,7 +974,7 @@ fn 生成行为文档(
             e.说明
         );
     }
-    doc += "\n## 二、遵循 GNOME 默认的键位（Mackey 不接管）\n\n| 键位 | 行为 | 归因 | 说明 |\n|---|---|---|---|\n";
+    doc += "\n## 二、遵循 GNOME 默认的键位（麦奇不接管）\n\n| 键位 | 行为 | 归因 | 说明 |\n|---|---|---|---|\n";
     for e in gnome {
         doc += &format!(
             "| {} | {} | {} | {} |\n",
@@ -1006,7 +1006,7 @@ fn 生成行为文档(
                 .iter()
                 .any(|e| !e.目标组合.is_empty() && 规范组合(&e.触发键) == *accel)
             {
-                "被 Mackey 接管（macOS 行为）".into()
+                "被麦奇接管（macOS 行为）".into()
             } else {
                 "GNOME 保留".into()
             };

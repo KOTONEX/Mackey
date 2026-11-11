@@ -68,7 +68,7 @@ pub fn 检查桌面() -> Result<()> {
         .unwrap_or_default();
     ensure!(
         desktop.to_lowercase().contains("gnome"),
-        "Mackey 仅支持 GNOME（当前桌面：{desktop}）"
+        "麦奇仅支持 GNOME（当前桌面：{desktop}）"
     );
     Ok(())
 }
@@ -211,7 +211,7 @@ pub fn 写入引擎服务(路径: &路径集合) -> Result<bool> {
         "GNOME_SOCKET={}",
         路径.套接字.to_str().context("套接字路径不是 UTF-8")?
     ))?;
-    原子写入(路径,&unit,format!("[Unit]\nDescription=Mackey 键位引擎（xremap）\nAfter=mackey-focusd.service\nRequires=mackey-focusd.service\nBindsTo=mackey-focusd.service\n\n[Service]\nType=simple\nEnvironment={环境}\nExecStart={exec}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
+    原子写入(路径,&unit,format!("[Unit]\nDescription=麦奇键位引擎（xremap）\nAfter=mackey-focusd.service\nRequires=mackey-focusd.service\nBindsTo=mackey-focusd.service\n\n[Service]\nType=simple\nEnvironment={环境}\nExecStart={exec}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
     Ok(true)
 }
 fn 移除扩展登记(uuid: &str) -> Result<()> {
@@ -273,7 +273,7 @@ pub fn 安装(路径: &路径集合, 不下载: bool, 保持运行: bool) -> Res
     }
     let exec = 转义systemd参数(binary.to_str().context("二进制路径不是 UTF-8")?)?;
     let 套接字 = 转义systemd参数(路径.套接字.to_str().context("套接字路径不是 UTF-8")?)?;
-    原子写入(路径,&路径.服务目录.join(服务列表[0]),format!("[Unit]\nDescription=Mackey 焦点上报桥\nStartLimitIntervalSec=0\n\n[Service]\nType=notify\nNotifyAccess=main\nExecStartPost=systemctl --user --no-block start mackey-engine.service\nExecStart={exec} 焦点桥 --套接字 {套接字}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
+    原子写入(路径,&路径.服务目录.join(服务列表[0]),format!("[Unit]\nDescription=麦奇焦点上报桥\nStartLimitIntervalSec=0\n\n[Service]\nType=notify\nNotifyAccess=main\nExecStartPost=systemctl --user --no-block start mackey-engine.service\nExecStart={exec} 焦点桥 --套接字 {套接字}\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=default.target\n").as_bytes(),0o644)?;
     写入引擎服务(路径)?;
     用户服务命令(&["daemon-reload"])?;
     let parent = 路径.命令入口.parent().context("入口没有父目录")?;
@@ -463,7 +463,7 @@ pub fn 启用(路径: &路径集合) -> Result<()> {
     Ok(())
 }
 pub fn 状态(路径: &路径集合) {
-    println!("── Mackey 状态 ──");
+    println!("── 麦奇状态 ──");
     println!(
         "引擎：{}",
         查找引擎(路径)

@@ -80,7 +80,7 @@ pub fn 生成(仅发布说明: bool) -> Result<std::path::PathBuf> {
     )?;
     let 标签: Vec<_> = 标签文本.lines().collect();
     let mut 文本 = if 仅发布说明 {
-        format!("# Mackey {}\n\n", crate::版本)
+        format!("# 麦奇 {}\n\n", crate::版本)
     } else {
         "# 变更日志\n\n> 根据 Git 提交和版本标签生成；未提交的修改不会列入。\n\n".to_owned()
     };

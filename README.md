@@ -1,4 +1,6 @@
-# Mackey
+# Mackey（麦奇）
+
+中文名麦奇，英文名与所有技术标识仍为 Mackey。
 
 在 GNOME Wayland 上沿用 macOS 的快捷键：按焦点应用把 ⌘/⌥ 组合转换为 Linux 等价按键，
 为终端、文件管理器和通用应用分别生成规则。终端里的 ⌘C 用于复制，Ctrl+C 保留 SIGINT；

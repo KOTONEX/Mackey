@@ -155,7 +155,7 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
     };
     ensure!(
         ["gnome", "full"].contains(&特性),
-        "Mackey 仅支持 gnome / full 引擎特性"
+        "麦奇仅支持 gnome / full 引擎特性"
     );
     let requested = options.标签.clone().or_else(|| {
         std::env::var("MACKEY_ENGINE_TAG")
@@ -191,7 +191,7 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
         println!(
             "{}",
             serde_json::to_string_pretty(
-                &json!({"标签":标签,"架构":架构,"特性":特性,"说明":"Mackey 仅支持 GNOME Wayland","候选地址":candidates,"目标路径":目标路径,"缓存":缓存,"状态文件":状态目录})
+                &json!({"标签":标签,"架构":架构,"特性":特性,"说明":"麦奇仅支持 GNOME Wayland","候选地址":candidates,"目标路径":目标路径,"缓存":缓存,"状态文件":状态目录})
             )?
         );
         return Ok(());
