@@ -210,6 +210,9 @@ fn 组装附件(根: &Path) -> Result<()> {
     let 扩展包 = 目录.join(format!("mackey-gnome-extension-{}.zip", crate::版本));
     原子写入(&路径, &扩展包, &归档.finish()?.into_inner(), 0o644)?;
     附件.push(扩展包);
+    let 安装脚本 = 目录.join("install.sh");
+    原子写入(&路径, &安装脚本, crate::安装脚本.as_bytes(), 0o755)?;
+    附件.push(安装脚本);
     附件.sort();
     let mut 清单 = String::new();
     for 附件 in 附件 {
@@ -247,7 +250,7 @@ mod 测试 {
     use sha2::{Digest, Sha256};
     use std::io::Read;
     #[test]
-    fn 发布附件包含提交源码真实扩展与四项校验和() {
+    fn 发布附件包含提交源码真实扩展与五项校验和() {
         let 临时 = crate::开发::临时目录().unwrap();
         let 根 = 临时.path();
         fs::write(根.join("README.md"), "源码探针").unwrap();
@@ -349,7 +352,11 @@ mod 测试 {
         assert!(组装附件(根).unwrap_err().to_string().contains("提交不一致"));
         let 清单 =
             fs::read_to_string(发行.join(format!("SHA256SUMS-{}.txt", crate::版本))).unwrap();
-        assert_eq!(清单.lines().count(), 4);
+        assert_eq!(清单.lines().count(), 5);
+        assert_eq!(
+            fs::read_to_string(发行.join("install.sh")).unwrap(),
+            crate::安装脚本
+        );
         for 行 in 清单.lines() {
             let (摘要, 文件) = 行.split_once("  ").unwrap();
             assert_eq!(

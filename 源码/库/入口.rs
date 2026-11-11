@@ -36,6 +36,8 @@ pub const 扩展标识: &str = "mackey-focus@kotonex";
 pub const 旧扩展标识: &str = "xremap-compat@mackey.local";
 pub const 嵌入清单: &str = include_str!("../../配置/行为清单.json");
 pub const 版本: &str = env!("CARGO_PKG_VERSION");
+/// 首次安装引导脚本；发行时作为独立附件分发，与源码同字节。
+pub const 安装脚本: &str = include_str!("../../install.sh");
 /// 版本由 Cargo 自动写入；安装和发布共用同一份元数据。
 pub const 扩展元数据: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/metadata.json"));
 

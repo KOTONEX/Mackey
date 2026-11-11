@@ -69,6 +69,7 @@ fn 公开(根: &Path, 标签: &str) -> Result<()> {
         format!("mackey-{}-source.tar.gz", crate::版本),
         format!("mackey-gnome-extension-{}.zip", crate::版本),
         format!("SHA256SUMS-{}.txt", crate::版本),
+        "install.sh".into(),
     ] {
         let 路径 = 发行目录.join(名称);
         ensure!(

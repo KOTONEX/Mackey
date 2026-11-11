@@ -12,34 +12,14 @@
 ## 快速开始
 
 从 [发行页](https://github.com/KOTONEX/Mackey/releases/latest) 手工下载对应架构的二进制包并核对
-`SHA256SUMS-<版本>.txt` 也可以；更省事的是整段粘贴下面的命令，自动识别架构与最新版本、
-校验 SHA-256、解压并安装：
+`SHA256SUMS-<版本>.txt` 也可以；更省事的是运行发行版附带的安装脚本，由它识别架构与最新
+版本、校验 SHA-256、解压并安装：
 
 ```bash
-tmp=$(mktemp -d) && cd "$tmp" || exit 1
-trap 'rm -rf "$tmp"' EXIT
-arch=$(uname -m)
-case "$arch" in
-  x86_64|amd64) arch=x86_64 ;;
-  aarch64|arm64) arch=aarch64 ;;
-  *) echo "不支持的架构：$arch" >&2; exit 1 ;;
-esac
-tag=$(curl -fsSIL -o /dev/null -w '%{url_effective}' \
-  https://github.com/KOTONEX/Mackey/releases/latest | sed 's#.*/tag/##')
-case "$tag" in
-  v[0-9]*) version=${tag#v} ;;
-  *) echo "无法解析最新版本：$tag" >&2; exit 1 ;;
-esac
-tarball=mackey-${version}-linux-${arch}.tar.gz
-base=https://github.com/KOTONEX/Mackey/releases/download/${tag}
-curl -fsSLO "$base/SHA256SUMS-${version}.txt"
-curl -fsSLO "$base/$tarball"
-expected=$(awk -v f="$tarball" '$2==f {print $1}' "SHA256SUMS-${version}.txt")
-test -n "$expected" || { echo "校验清单缺少 $tarball" >&2; exit 1; }
-echo "$expected  $tarball" | sha256sum -c -
-tar -xzf "$tarball"
-cd "mackey-${version}-linux-${arch}" && ./mackey 安装
+bash <(curl -fsSL https://github.com/KOTONEX/Mackey/releases/latest/download/install.sh)
 ```
+
+参数会原样转交给 `mackey 安装`，例如已有自备引擎时可加 `--不下载`；脚本可先下载查看再执行。
 
 安装会下载 xremap、生成配置并写入 GNOME 扩展和用户服务，**不会自动启动**。
 确认当前会话具备 input 组权限、`/dev/uinput` 可写，并重新登录以加载扩展；然后执行：
