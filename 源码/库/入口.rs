@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+#[path = "升级.rs"]
+pub mod 升级;
 #[path = "变更日志.rs"]
 pub mod 变更日志;
 #[path = "开发.rs"]

@@ -3,7 +3,7 @@
 mod 命令帮助;
 use anyhow::{Result, ensure};
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
-use mackey::{引擎下载, 服务, 焦点桥, 路径::路径集合, 配置生成};
+use mackey::{升级, 引擎下载, 服务, 焦点桥, 路径::路径集合, 配置生成};
 #[derive(Parser)]
 #[command(name="mackey",about="GNOME Wayland 上的 macOS 键位模拟",version=mackey::版本.trim())]
 struct 命令行 {
@@ -25,6 +25,8 @@ enum 子命令 {
         #[arg(long)]
         保持运行: bool,
     },
+    /// 检查最新正式发行并安装（校验 SHA-256，保持运行）
+    升级,
     /// 启动焦点桥和键盘引擎
     启用,
     /// 停用服务，恢复 Linux 按键
@@ -105,6 +107,7 @@ fn 执行() -> Result<()> {
         子命令::安装 {
             不下载, 保持运行
         } => 服务::安装(&路径, 不下载, 保持运行)?,
+        子命令::升级 => 升级::执行(&路径)?,
         子命令::启用 => 服务::启用(&路径)?,
         子命令::停用 => 服务::停用()?,
         子命令::状态 => 服务::状态(&路径),
