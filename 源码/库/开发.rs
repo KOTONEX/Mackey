@@ -21,7 +21,7 @@ pub fn 临时目录() -> Result<tempfile::TempDir> {
     Ok(tempfile::tempdir_in(临时根(&根)?)?)
 }
 fn 临时根(根: &Path) -> Result<PathBuf> {
-    let 目录 = 路径集合::发现()?.保护(&根.join("builddir/临时"))?;
+    let 目录 = 路径集合::发现()?.保护(&根.join("临时"))?;
     ensure!(目录.starts_with(根), "临时目录必须位于项目内");
     std::fs::create_dir_all(&目录)?;
     Ok(目录)
@@ -129,17 +129,13 @@ mod 测试 {
     #[test]
     fn 临时目录留在项目内且拒绝软链转移() {
         let 临时 = 临时目录().unwrap();
-        assert!(
-            临时
-                .path()
-                .starts_with(仓库().unwrap().join("builddir/临时"))
-        );
+        assert!(临时.path().starts_with(仓库().unwrap().join("临时")));
         let 项目 = 临时.path().join("项目");
         let 外部 = 临时.path().join("外部");
         std::fs::create_dir(&项目).unwrap();
         std::fs::create_dir(&外部).unwrap();
-        std::os::unix::fs::symlink(&外部, 项目.join("builddir")).unwrap();
+        std::os::unix::fs::symlink(&外部, 项目.join("临时")).unwrap();
         assert!(临时根(&项目).is_err());
-        assert!(!外部.join("临时").exists());
+        assert!(std::fs::read_dir(&外部).unwrap().next().is_none());
     }
 }

@@ -47,7 +47,7 @@ fn 保护(主目录: &Path, 路径: &Path) -> 结果<PathBuf> {
 }
 fn 临时根(主目录: &Path, 根: &Path) -> 结果<PathBuf> {
     let 根 = 保护(主目录, 根)?;
-    let 目录 = 保护(主目录, &根.join("builddir/临时"))?;
+    let 目录 = 保护(主目录, &根.join("临时"))?;
     要求(目录.starts_with(&根), "流水线临时目录必须位于项目内")?;
     fs::create_dir_all(&目录)?;
     Ok(目录)
@@ -272,7 +272,9 @@ mod 测试 {
     fn 临时目录保护主目录且拒绝项目外软链() {
         let 主目录 = fs::canonicalize(env::var_os("HOME").unwrap()).unwrap();
         let 根 = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let 路径 = 临时根(&主目录, 根).unwrap().join(format!(
+        let 临时 = 临时根(&主目录, 根).unwrap();
+        assert_eq!(临时, fs::canonicalize(根).unwrap().join("临时"));
+        let 路径 = 临时.join(format!(
             "流水线测试-{}",
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -295,8 +297,8 @@ mod 测试 {
         let 外部 = 路径.join("外部");
         fs::create_dir(&项目).unwrap();
         fs::create_dir(&外部).unwrap();
-        std::os::unix::fs::symlink(&外部, 项目.join("builddir")).unwrap();
+        std::os::unix::fs::symlink(&外部, 项目.join("临时")).unwrap();
         assert!(临时根(&主目录, &项目).is_err());
-        assert!(!外部.join("临时").exists());
+        assert!(fs::read_dir(&外部).unwrap().next().is_none());
     }
 }
