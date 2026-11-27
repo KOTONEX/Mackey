@@ -56,7 +56,6 @@ fn 公开(根: &Path, 标签: &str) -> Result<()> {
         "--json".into(),
         "isDraft".into(),
     ])?;
-    // 网络错误不会触发覆盖：新建同标签发行会由 GitHub 拒绝，上传只对已确认草稿执行。
     let 已有草稿 = 检查.status.success();
     if 已有草稿 {
         校验草稿(&检查.stdout)?;

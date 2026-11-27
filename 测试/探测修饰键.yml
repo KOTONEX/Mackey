@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Mackey contributors
-# 语义探针：判定 xremap 的 modmap（修饰键位置交换）与 keymap 触发条件的先后关系。
-# 每条规则都用 launch 动作做副作用，便于脚本断言；不会向会话注入任何按键。
 modmap:
   - name: pc-swap-probe
     remap:

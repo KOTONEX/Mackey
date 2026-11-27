@@ -1,18 +1,13 @@
-# xremap 引擎二进制：由使用者自行获取（cargo install 或从发布页下载），不入库
 .vendor/
 
-# Rust 构建与发布产物（Cargo.lock 必须提交）
 target/
 dist/
 builddir/
-# CI 首阶段直接由 rustc 生成的准备器；目录及后续临时工具均留在项目内
 /.github/流水线
 
-# 本地运行与测试产物
 /临时/
 *.log
 
-# 编辑器 / 操作系统
 .DS_Store
 *~
 *.swp
@@ -21,10 +16,8 @@ builddir/
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# Kilo / Agent Manager 的本地状态（项目配置 .kilo/command、.kilo/agent 仍可入库）
 .kilo/worktrees/
 .kilo/agent-manager.json
 
-# 旧生成器遗留的工具缓存
 __pycache__/
 *.py[cod]

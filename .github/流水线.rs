@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// 仅用标准库编译，先准备原生 TypeScript，避免 Cargo 构建脚本的启动依赖环。
 use std::{
     env, fs,
     io::{Read, Write},
@@ -81,7 +80,6 @@ fn 校验归档路径(名称: &str) -> 结果 {
 }
 fn 平台输出(变量: &str, 文本: &str) -> 结果 {
     let 路径 = env::var_os(变量).ok_or_else(|| format!("缺少平台输出 {变量}"))?;
-    // GITHUB_PATH/GITHUB_ENV 是 Actions 提供的临时命令文件，不是用户持久配置。
     writeln!(fs::OpenOptions::new().append(true).open(路径)?, "{文本}")?;
     Ok(())
 }
@@ -175,7 +173,6 @@ fn 准备(主目录: &Path, 模式: &str) -> 结果 {
     临时根(主目录, &目标)?;
     fs::create_dir_all(目标.join("builddir/发行"))?;
     if 模式 == "构建" {
-        // 只有 GitHub 临时 runner 准备阶段允许安装系统开发依赖。
         运行(主目录, "sudo", &["apt-get", "update"])?;
         运行(
             主目录,

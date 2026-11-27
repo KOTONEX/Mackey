@@ -148,7 +148,6 @@ pub fn 执行() -> Result<std::path::PathBuf> {
     let 编码器 = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
     let mut 归档 = tar::Builder::new(编码器);
     归档.follow_symlinks(false);
-    // 发行包使用普通文件条目，避免把稀疏 ELF 编码为 GNU 特殊条目。
     归档.sparse(false);
     归档.append_dir_all(&名称, &包目录)?;
     let 字节 = 归档.into_inner()?.finish()?;

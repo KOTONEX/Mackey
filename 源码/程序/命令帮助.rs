@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use clap::Command;
 
-/// 保留标准参数协议，将命令树的展示文字统一为中文。
 pub fn 汉化(命令: Command) -> Command {
     fn 设置(命令: Command) -> Command {
         命令
@@ -58,7 +57,6 @@ pub fn 汉化(命令: Command) -> Command {
             .mut_subcommands(翻译)
     }
     let mut 命令 = 设置(命令);
-    // 先构建整棵命令树，使各层用法包含完整的父命令路径。
     命令.build();
     翻译(命令)
 }

@@ -13,7 +13,6 @@ use std::{
     time::Duration,
 };
 
-/// 只接受 GitHub 的正式发行；预发行、草稿与任意标签都不属于自动升级范围。
 const 最新发行页: &str = "https://github.com/KOTONEX/Mackey/releases/latest";
 const 标签前缀: &str = "https://github.com/KOTONEX/Mackey/releases/tag/";
 const 下载前缀: &str = "https://github.com/KOTONEX/Mackey/releases/download/";
@@ -48,7 +47,6 @@ fn 比较版本(左: &str, 右: &str) -> Result<Ordering> {
     Ok(版本序(左)?.cmp(&版本序(右)?))
 }
 
-/// 从 `sha256sum` 兼容的校验清单中取指定文件的摘要。
 pub fn 校验和(清单: &str, 文件名: &str) -> Result<String> {
     for 行 in 清单.lines() {
         let mut 部分 = 行.split_whitespace();
@@ -68,7 +66,6 @@ pub fn 校验和(清单: &str, 文件名: &str) -> Result<String> {
     bail!("校验清单里没有 {文件名}")
 }
 
-/// 从 /releases/latest 的最终跳转地址解析标签；只接受标签页，不接受查询参数或子路径。
 fn 解析标签(地址: &str) -> Result<String> {
     let 标签 = 地址
         .strip_prefix(标签前缀)
@@ -128,7 +125,6 @@ fn 校验成员路径(路径: &Path, 根: &str) -> Result<()> {
     Ok(())
 }
 
-/// 只读取发行包里的 `mackey` 二进制；其余成员仅做路径与类型校验，不落盘。
 pub fn 提取二进制(压缩包: &[u8], 版本: &str, 架构: &str) -> Result<Vec<u8>> {
     let 根 = format!("mackey-{版本}-linux-{架构}");
     let mut 归档 = tar::Archive::new(flate2::read::GzDecoder::new(std::io::Cursor::new(压缩包)));
@@ -169,7 +165,6 @@ fn 创建客户端() -> Result<Client> {
         .build()?)
 }
 
-/// /releases/latest 只跳转到最新正式发行；无需 GitHub API，也不受未认证限流影响。
 fn 最新标签(客户端: &Client) -> Result<String> {
     let 响应 = 客户端
         .get(最新发行页)

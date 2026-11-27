@@ -219,7 +219,6 @@ pub fn 转为加速键(combo: &str) -> String {
         + &key
 }
 pub fn 解析加速键列表(raw: &str) -> Vec<String> {
-    // GVariant 引号内支持反斜杠转义，不执行其文本。
     let mut values = Vec::new();
     let mut 当前键盘 = String::new();
     let mut quote = None;

@@ -29,8 +29,6 @@ impl 路径集合 {
         ensure!(主目录.is_absolute(), "HOME 必须是绝对路径");
         let 配置 = 环境目录("XDG_CONFIG_HOME", 主目录.join(".config"));
         let 数据 = 环境目录("XDG_DATA_HOME", 主目录.join(".local/share"));
-        // Unix 套接字是瞬时 IPC；默认运行时目录是唯一允许的 HOME 外写入点，
-        // 并且仅限本项目的固定套接字文件名。
         let runtime = 环境目录(
             "XDG_RUNTIME_DIR",
             PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })),
@@ -94,8 +92,6 @@ impl 路径集合 {
         self.保护套接字(&self.套接字)
     }
 }
-// 逐级解析现有祖先与 '..'，防止 HOME 内软链将写入或删除操作引向外部。
-// 所有持久文件写入均应通过此保护。
 pub fn 保护主目录路径(主目录: &Path, path: &Path) -> Result<PathBuf> {
     let 主目录 = fs::canonicalize(主目录).context("无法解析 HOME")?;
     let path = if path.is_absolute() {

@@ -159,7 +159,6 @@ fn 真实套接字协议与正常退出() {
     assert!(!duplicate.status.success());
     assert!(套接字.exists());
     assert_eq!(请求(&套接字, &json!("ActiveWindow"))["title"], "固定");
-    // SIGTERM 是 systemd 常规的服务停止信号。
     unsafe {
         libc::kill(server.0.id() as i32, libc::SIGTERM);
     }

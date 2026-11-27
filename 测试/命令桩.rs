@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// 测试专用的外部命令桩；发行包不包含此程序。
 use serde_json::{Value, json};
 use std::{env, fs, io::Write, path::Path};
 fn 执行() -> anyhow::Result<()> {

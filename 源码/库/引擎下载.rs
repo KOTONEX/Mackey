@@ -227,8 +227,6 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
             路径.保护(&asset)?;
             temp.persist(&asset).map_err(|e| e.error)?;
             原子写入(路径, &目标路径, &payload, 0o755)?;
-            // 分别记录请求特性与实际特性，让 full 回退仍可幂等，
-            // 同时准确记录下载的资产。
             写入结构数据(
                 路径,
                 &状态目录,

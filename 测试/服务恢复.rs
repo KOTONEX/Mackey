@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// 显式运行：cargo test --locked --test 服务恢复 -- --ignored --nocapture
-// 使用真实用户 systemd 和隔离服务名，不打开输入设备、不停止用户键盘服务。
 use std::{
     fs,
     os::unix::fs::{PermissionsExt, symlink},

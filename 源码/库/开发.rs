@@ -15,7 +15,6 @@ pub fn 仓库() -> Result<PathBuf> {
     let 路径 = 路径集合::发现()?;
     路径.保护(&根)
 }
-/// 开发、测试和打包共用项目内的临时空间，不能通过软链转移到项目外。
 pub fn 临时目录() -> Result<tempfile::TempDir> {
     let 根 = 仓库()?;
     Ok(tempfile::tempdir_in(临时根(&根)?)?)

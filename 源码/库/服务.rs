@@ -35,7 +35,6 @@ fn 用户服务命令(args: &[&str]) -> Result<Output> {
     执行并检查("systemctl", &all)
 }
 fn 停用已有服务() -> Result<()> {
-    // 同一事务停用两者，避免焦点桥仍存活时重新拉起引擎；After 保证引擎先停。
     let mut 参数 = vec!["disable", "--now"];
     for 服务 in 服务列表.into_iter().rev() {
         let 状态 = 用户服务命令(&["show", "--property=LoadState", "--value", 服务])?;
@@ -151,8 +150,6 @@ fn 转义systemd环境(s: &str) -> Result<String> {
     ))
 }
 fn 移除文件(路径: &路径集合, path: &Path) -> Result<()> {
-    // 删除末尾软链本身；先检查父目录，再读取软链元信息，
-    // 避免递归删除跟随软链到目标。
     路径.保护父目录(path.parent().context("删除路径没有父目录")?)?;
     let 元信息 = match fs::symlink_metadata(path) {
         Ok(m) => m,
@@ -387,7 +384,6 @@ pub fn 应用(路径: &路径集合, 确认执行: bool) -> Result<()> {
                 &["set", &r.模式, &r.键名, &转为加速键列表(&r.新值)],
             ) {
                 let mut 恢复失败 = Vec::new();
-                // 只回滚本次尝试的键，不能用最早备份覆盖用户后来做的改动。
                 for 已改 in generated.迁移计划[..=编号].iter().rev() {
                     if let Err(恢复错误) = 执行并检查(
                         "gsettings",
@@ -404,7 +400,6 @@ pub fn 应用(路径: &路径集合, 确认执行: bool) -> Result<()> {
             }
         }
     }
-    // 运行中的 xremap 可能已加载旧配置。
     停用()?;
     启用(路径)
 }
@@ -434,8 +429,6 @@ pub fn 启用(路径: &路径集合) -> Result<()> {
     ensure!(写入引擎服务(路径)?, "没有可用引擎");
     用户服务命令(&["daemon-reload"])?;
     用户服务命令(&["enable", "--now", 服务列表[0]])?;
-    // 引擎的应用过滤依赖焦点桥，启动引擎前必须验证套接字，
-    // 桥接失败时不得让终端退化为通用映射。
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     let mut ready = false;
     while std::time::Instant::now() < deadline {
@@ -577,7 +570,6 @@ pub fn 卸载(
         移除文件(路径, path)?;
     }
     移除套接字(路径)?;
-    // 还原失败时保留备份；清除配置也不能跳过这个保护。
     restored?;
     if 清除配置 {
         移除文件(路径, &路径.配置)?;

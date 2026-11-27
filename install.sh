@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Mackey（麦奇）安装引导：解析最新正式发行、校验 SHA-256、解压并执行 `mackey 安装`。
-# 用法：bash <(curl -fsSL https://github.com/KOTONEX/Mackey/releases/latest/download/install.sh)
-# 参数会原样转交给 `mackey 安装`，例如 --不下载、--保持运行。
 set -euo pipefail
 
 tmp=$(mktemp -d)

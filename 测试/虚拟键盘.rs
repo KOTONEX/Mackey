@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// 测试专用 uinput 注入器；xremap 必须仅抓取其设备名。
 use anyhow::{Context, Result, ensure};
 use clap::Parser;
 use std::{
@@ -141,7 +140,6 @@ fn 解析事件(send: &str) -> Result<Vec<(u16, i32)>> {
         .collect()
 }
 fn 调用设备控制(fd: RawFd, request: libc::c_ulong, arg: libc::c_int) -> Result<()> {
-    // fd 是打开的 /dev/uinput 描述符；下列请求采用标量整数参数。
     let rc = unsafe { libc::ioctl(fd, request, arg) };
     if rc < 0 {
         return Err(io::Error::last_os_error().into());
@@ -164,8 +162,6 @@ fn 发送事件(file: &mut std::fs::File, kind: u16, code: u16, value: i32) -> R
         code,
         value,
     };
-    // 事件使用 repr(C)，完整初始化，匹配 Linux input_event 的原生布局，
-    // 支持 x86_64/aarch64，包含 timeval ABI。
     let bytes = unsafe {
         std::slice::from_raw_parts(
             (&event as *const 输入事件).cast::<u8>(),
@@ -188,7 +184,6 @@ fn 执行() -> Result<()> {
     let 间隔 = 校验时长(args.间隔秒数)?;
     let 存活 = 校验时长(args.存活秒数)?;
     let events = 解析事件(&args.事件)?;
-    // 显式的测试设备 I/O；安装过程不会调用。
     let file = OpenOptions::new().write(true).open("/dev/uinput")?;
     let fd = file.as_raw_fd();
     for kind in [1, 0, 20] {
@@ -207,7 +202,6 @@ fn 执行() -> Result<()> {
         ff_effects_max: 0,
     };
     setup.名称[..args.名称.len()].copy_from_slice(args.名称.as_bytes());
-    // UI_DEV_SETUP 接受指向 92 字节原生 uinput_setup 结构的指针。
     let rc = unsafe { libc::ioctl(fd, 0x405c5503 as libc::c_ulong, &setup) };
     ensure!(
         rc >= 0,

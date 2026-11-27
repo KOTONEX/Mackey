@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-/// GitHub 自分发包补齐管理器需要的整数版本，显示值仍采用 Cargo 版本。
 pub fn 生成(原始: &[u8], 版本: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     if 版本.is_empty()
         || 版本.len() > 16
@@ -19,7 +18,6 @@ pub fn 生成(原始: &[u8], 版本: &str) -> Result<Vec<u8>, Box<dyn std::error
     if *次版 >= 1000 || *补丁 >= 1000 {
         return Err("扩展整数版本编码要求次版本和补丁版本均小于 1000".into());
     }
-    // 每段预留三位，避免跨主版本时排序颠倒；管理器读取为有符号 32 位整数。
     let 整数版本 = 主版
         .checked_mul(1_000_000)
         .and_then(|数值| 数值.checked_add(次版 * 1000))

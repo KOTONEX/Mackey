@@ -1,19 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Mackey contributors
-// 隔离带测试：验证 extension.js 能被加载、D-Bus 契约能真的被调用。
-//
-// 为什么需要它：GNOME 在 Wayland 下不会热扫描扩展目录，而嵌套/headless 的
-// gnome-shell 又会因为抢占 logind 会话（EBUSY）/段错误而跑不起来。
-// 所以这里加载**由 TypeScript 编译生成的真实 extension.js**，只桩化 shell 提供的全局对象
-// （resource:///org/gnome/shell/extensions/extension.js 与 global.display），
-// 然后用真实 D-Bus 往返（自调用）验证：
-//   1. 模块能解析、默认导出的类能实例化；
-//   2. enable() 会在 /com/k0kubun/Xremap 导出 com.k0kubun.Xremap；
-//   3. ActiveWindow 返回 {"wm_class","title"} 形状的 JSON，且能读到焦点窗口；
-//   4. WMClass 返回纯类名、WMClasses 返回去重列表；
-//   5. disable() 会撤掉导出。
-//
-// 用法：gjs -m <编译输出>/测试/扩展契约.js <被改写过的 extension.js 路径>
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import System from 'system';
@@ -35,8 +21,6 @@ function 检查(名称: string, 条件: boolean, 补充 = ''): void {
 }
 
 function 调用(总线名: string, 方法: string): string {
-    // 注意：被调用的对象就在本进程里，所以必须用**异步**调用并驱动主循环，
-    // 否则同步 call_sync 会把自己阻塞死（进来的方法调用永远没机会被派发）。
     const 主循环 = GLib.MainLoop.new(null, false);
     const 结果: {回复: GLib.Variant | null; 错误: unknown} = {回复: null, 错误: null};
     Gio.DBus.session.call(
@@ -66,7 +50,6 @@ function 调用(总线名: string, 方法: string): string {
     return 文本;
 }
 
-// ---- 桩：shell 提供的全局对象 -------------------------------------------------
 const 模拟窗口: 窗口接口 = {
     get_wm_class: () => 'TestTerminal',
     get_gtk_application_id: () => null,
@@ -81,7 +64,6 @@ globalThis.global = {
     get_window_actors: () => [{ meta_window: 模拟窗口 }],
 };
 
-// ---- 加载真实扩展源码 ---------------------------------------------------------
 const 目标文件 = ARGV[0];
 if (!目标文件)
     throw new Error('用法: gjs -m <编译输出>/测试/扩展契约.js <extension.js 路径>');
@@ -94,9 +76,7 @@ const 模块: { default: new(metadata: object) => 扩展实例 } = await import(
 const 实例 = new 模块.default({});
 检查('实例可构造', !!实例);
 
-// ---- enable() 与 D-Bus 契约 ---------------------------------------------------
 实例.enable();
-// 隔离总线没有真实 GNOME Shell，取得其名称以便 Rust 客户端查找。
 const 名称归属 = Gio.DBus.session.call_sync(
     'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
     'RequestName', new GLib.Variant('(su)', ['org.gnome.Shell', 0]), null,
@@ -131,7 +111,6 @@ if (对象(解析结果)) {
     检查('JSON 含 title 字段', 解析结果.title === 'bash — /tmp', `→ ${JSON.stringify(解析结果)}`);
 }
 
-// 独立 Rust 进程调用该对象期间继续派发 GJS 主循环。
 const 桥程序 = ARGV[1];
 if (!桥程序)
     throw new Error('缺少 Rust 焦点桥程序');
@@ -168,7 +147,6 @@ try {
     检查('WMClasses 返回去重列表', false, `→ ${错误说明(错误)}`);
 }
 
-// 焦点窗口缺失时应返回空类名，而不是抛错（xremap 会退到兜底 keymap）
 globalThis.global.display.focus_window = null;
 try {
     const 空焦点: unknown = JSON.parse(调用(总线名称, 'ActiveWindow'));
@@ -178,7 +156,6 @@ try {
     检查('无焦点窗口时返回空 wm_class', false, `→ ${错误说明(错误)}`);
 }
 
-// ---- disable() ---------------------------------------------------------------
 实例.disable();
 let 已撤销 = false;
 try {

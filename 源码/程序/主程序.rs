@@ -14,67 +14,65 @@ struct 命令行 {
 enum 子命令 {
     #[command(hide = true)]
     流水线 { 操作: String },
-    /// 初始化配置并识别键盘布局
+    #[command(about = "初始化配置并识别键盘布局")]
     初始化,
-    /// 下载 xremap 引擎（gnome 特性）
+    #[command(about = "下载 xremap 引擎（gnome 特性）")]
     获取引擎(引擎下载::选项),
-    /// 安装 Rust 二进制、扩展和用户服务（不自动启动）
+    #[command(about = "安装 Rust 二进制、扩展和用户服务（不自动启动）")]
     安装 {
         #[arg(long)]
         不下载: bool,
         #[arg(long)]
         保持运行: bool,
     },
-    /// 检查最新正式发行并安装（校验 SHA-256，保持运行）
+    #[command(about = "检查最新正式发行并安装（校验 SHA-256，保持运行）")]
     升级,
-    /// 启动焦点桥和键盘引擎
+    #[command(about = "启动焦点桥和键盘引擎")]
     启用,
-    /// 停用服务，恢复 Linux 按键
+    #[command(about = "停用服务，恢复 Linux 按键")]
     停用,
-    /// 查看状态
+    #[command(about = "查看状态")]
     状态,
-    /// 环境体检
+    #[command(about = "环境体检")]
     体检,
-    /// 只读探测冲突
-    #[command(name = "探测")]
+    #[command(name = "探测", about = "只读探测冲突")]
     探测结果,
-    /// 生成配置、迁移计划与行为清单
+    #[command(about = "生成配置、迁移计划与行为清单")]
     生成(配置生成::选项),
-    /// 备份、迁移冲突键位并重启服务
+    #[command(about = "备份、迁移冲突键位并重启服务")]
     应用 {
         #[arg(short = 'y', long)]
         确认执行: bool,
     },
-    /// 还原 GNOME 键位
+    #[command(about = "还原 GNOME 键位")]
     还原,
-    /// 焦点上报桥（D-Bus → Unix socket）
+    #[command(about = "焦点上报桥（D-Bus → Unix socket）")]
     焦点桥(焦点桥::选项),
-    /// 输出键盘识别结果
+    #[command(about = "输出键盘识别结果")]
     识别键盘,
-    /// 查看服务日志
+    #[command(about = "查看服务日志")]
     日志 {
         #[arg(default_value_t = 50)]
         行数: u32,
     },
-    /// 查看版本
+    #[command(about = "查看版本")]
     版本,
-    /// 完整离线检查（需要源码仓库）
+    #[command(about = "完整离线检查（需要源码仓库）")]
     检查,
-    /// Rust、隔离安装卸载、映射差分与真实 GJS 契约测试
+    #[command(about = "Rust、隔离安装卸载、映射差分与真实 GJS 契约测试")]
     测试 {
-        /// 加跑虚拟键盘测试（需要设备权限及无全局引擎占用）
-        #[arg(long)]
+        #[arg(long, help = "加跑虚拟键盘测试（需要设备权限及无全局引擎占用）")]
         端到端: bool,
     },
-    /// 本机架构发行包及许可证
+    #[command(about = "本机架构发行包及许可证")]
     打包,
-    /// 汇总双架构发行包、源码、扩展与校验和
+    #[command(about = "汇总双架构发行包、源码、扩展与校验和")]
     发布附件,
-    /// 根据 Git 历史生成变更日志
+    #[command(about = "根据 Git 历史生成变更日志")]
     变更日志,
-    /// 根据 Git 历史生成当前版本发布说明
+    #[command(about = "根据 Git 历史生成当前版本发布说明")]
     发布说明,
-    /// 卸载并还原键位
+    #[command(about = "卸载并还原键位")]
     卸载 {
         #[arg(long)]
         保留配置: bool,

@@ -241,7 +241,6 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
         );
         fs::remove_file(&path)?;
     }
-    // 运行时目录由会话提供；不创建系统目录。
     let parent = path.parent().context("socket 没有父目录")?;
     if !parent.exists() {
         路径.保护(parent)?;
@@ -260,7 +259,6 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
     let source = Arc::new(Mutex::new(source));
     let 运行中 = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     eprintln!("[focusd] 监听 {}（后端 {}）", path.display(), options.后端);
-    // 来源已验证、套接字已监听且权限已收紧后，才放行依赖的键位引擎。
     通知就绪(std::env::var_os("NOTIFY_SOCKET").as_deref())?;
     while !stop.load(Ordering::Relaxed) {
         ensure!(
@@ -292,7 +290,6 @@ pub fn 执行(路径: &路径集合, options: &选项) -> Result<()> {
                     events: libc::POLLIN,
                     revents: 0,
                 };
-                // 连接到来立即唤醒；超时仅用于检查退出标志。
                 let 结果 = unsafe { libc::poll(&mut 事件, 1, 50) };
                 if 结果 < 0 {
                     let 错误 = std::io::Error::last_os_error();
