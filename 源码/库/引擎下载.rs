@@ -16,23 +16,27 @@ pub const 成员大小上限: u64 = 128 * 1024 * 1024;
 const 下载来源: &str = "https://github.com/xremap/xremap/releases";
 #[derive(Debug, Args)]
 pub struct 选项 {
-    #[arg(long)]
+    #[arg(long, help = "指定 xremap 二进制的安装路径")]
     pub 目标路径: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(long, help = "指定下载缓存目录")]
     pub 缓存: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(
+        long,
+        value_name = "状态文件",
+        help = "指定记录已装引擎信息的 JSON 文件"
+    )]
     pub 状态目录: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(long, help = "指定 xremap 发行标签，覆盖 MACKEY_ENGINE_TAG")]
     pub 标签: Option<String>,
-    #[arg(long)]
+    #[arg(long, help = "指定发行包架构，默认使用本机架构")]
     pub 架构: Option<String>,
-    #[arg(long, default_value = "gnome")]
+    #[arg(long, default_value = "gnome", help = "选择 gnome 或 full")]
     pub 特性: String,
-    #[arg(long)]
+    #[arg(long, help = "即使当前引擎已匹配也重新安装")]
     pub 强制: bool,
-    #[arg(long)]
+    #[arg(long, help = "只输出候选下载地址与安装路径")]
     pub 输出计划: bool,
-    #[arg(long, default_value_t = 60.0)]
+    #[arg(long, default_value_t = 60.0, help = "网络请求超时秒数")]
     pub 超时: f64,
 }
 impl Default for 选项 {

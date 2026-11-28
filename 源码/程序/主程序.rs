@@ -5,13 +5,22 @@ use anyhow::{Result, ensure};
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 use mackey::{升级, 引擎下载, 服务, 焦点桥, 路径::路径集合, 配置生成};
 #[derive(Parser)]
-#[command(name="mackey",about="GNOME Wayland 上的 macOS 键位模拟",version=mackey::版本.trim())]
+#[command(
+    name = "mackey",
+    about = "GNOME Wayland 上的 macOS 键位模拟",
+    after_help = "用 `mackey 帮助 <子命令>` 查看该命令的参数。"
+)]
 struct 命令行 {
     #[command(subcommand)]
     子命令: Option<子命令>,
 }
 #[derive(Subcommand)]
 enum 子命令 {
+    #[command(about = "查看命令帮助")]
+    帮助 {
+        #[arg(value_name = "子命令", help = "要查看的命令，省略时显示总览")]
+        子命令: Option<String>,
+    },
     #[command(hide = true)]
     流水线 { 操作: String },
     #[command(about = "初始化配置并识别键盘布局")]
@@ -20,9 +29,9 @@ enum 子命令 {
     获取引擎(引擎下载::选项),
     #[command(about = "安装 Rust 二进制、扩展和用户服务（不自动启动）")]
     安装 {
-        #[arg(long)]
+        #[arg(long, help = "使用已有引擎，跳过 xremap 下载")]
         不下载: bool,
-        #[arg(long)]
+        #[arg(long, help = "更新安装文件时保留当前运行的服务")]
         保持运行: bool,
     },
     #[command(about = "检查最新正式发行并安装（校验 SHA-256，保持运行）")]
@@ -41,7 +50,7 @@ enum 子命令 {
     生成(配置生成::选项),
     #[command(about = "备份、迁移冲突键位并重启服务")]
     应用 {
-        #[arg(short = 'y', long)]
+        #[arg(short = 'y', long, help = "跳过 GNOME 键位迁移确认")]
         确认执行: bool,
     },
     #[command(about = "还原 GNOME 键位")]
@@ -52,7 +61,7 @@ enum 子命令 {
     识别键盘,
     #[command(about = "查看服务日志")]
     日志 {
-        #[arg(default_value_t = 50)]
+        #[arg(default_value_t = 50, help = "显示最近的日志条数")]
         行数: u32,
     },
     #[command(about = "查看版本")]
@@ -74,22 +83,35 @@ enum 子命令 {
     发布说明,
     #[command(about = "卸载并还原键位")]
     卸载 {
-        #[arg(long)]
+        #[arg(long, help = "卸载时保留用户配置目录")]
         保留配置: bool,
-        #[arg(long)]
+        #[arg(long, help = "只显示将清理和还原的内容")]
         预演: bool,
-        #[arg(short = 'y', long)]
+        #[arg(short = 'y', long, help = "跳过卸载确认")]
         确认执行: bool,
     },
 }
 fn 执行() -> Result<()> {
     let mut 命令 = 命令帮助::汉化(命令行::command());
-    let 匹配 = 命令.clone().get_matches();
+    let 匹配 = match 命令.try_get_matches_from_mut(std::env::args_os()) {
+        Ok(匹配) => 匹配,
+        Err(错误) => {
+            错误.print()?;
+            eprintln!("查看命令请运行 `mackey 帮助`，查看版本请运行 `mackey 版本`。");
+            std::process::exit(错误.exit_code());
+        }
+    };
     let cli = 命令行::from_arg_matches(&匹配)?;
-    let Some(cmd) = cli.子命令 else {
-        命令.print_help()?;
-        println!();
-        return Ok(());
+    let cmd = match cli.子命令 {
+        None => return 命令帮助::显示(&mut 命令, None),
+        Some(子命令::帮助 { 子命令 }) => {
+            return 命令帮助::显示(&mut 命令, 子命令.as_deref());
+        }
+        Some(子命令::版本) => {
+            println!("mackey {}", mackey::版本);
+            return Ok(());
+        }
+        Some(cmd) => cmd,
     };
     ensure!(
         unsafe { libc::geteuid() } != 0,
@@ -146,12 +168,7 @@ fn 执行() -> Result<()> {
             print!("{}", String::from_utf8_lossy(&out.stdout));
             ensure!(out.status.success(), "journalctl 失败");
         }
-        子命令::版本 => {
-            println!("mackey {}", mackey::版本.trim());
-            if let Some(引擎下载) = 服务::查找引擎(&路径) {
-                println!("引擎：{}", 引擎下载.display());
-            }
-        }
+        子命令::帮助 { .. } | 子命令::版本 => unreachable!(),
         子命令::检查 => mackey::开发::检查()?,
         子命令::测试 { 端到端 } => {
             mackey::开发::测试()?;

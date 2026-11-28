@@ -1,9 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+use anyhow::{Context, Result};
 use clap::Command;
+
+pub fn 显示(命令: &mut Command, 子命令: Option<&str>) -> Result<()> {
+    let 命令 = match 子命令 {
+        Some(名称) => 命令
+            .find_subcommand_mut(名称)
+            .filter(|命令| !命令.is_hide_set())
+            .with_context(|| format!("未知子命令「{名称}」。可用命令见 `mackey 帮助`。"))?,
+        None => 命令,
+    };
+    命令.print_long_help()?;
+    println!();
+    Ok(())
+}
 
 pub fn 汉化(命令: Command) -> Command {
     fn 设置(命令: Command) -> Command {
         命令
+            .disable_help_flag(true)
+            .disable_version_flag(true)
             .disable_help_subcommand(true)
             .subcommand_value_name("命令")
             .subcommand_help_heading("命令")
@@ -26,11 +42,7 @@ pub fn 汉化(命令: Command) -> Command {
                 } else {
                     "选项"
                 };
-                let mut 帮助 = match 参数.get_id().as_str() {
-                    "help" => "显示帮助".to_owned(),
-                    "version" => "显示版本".to_owned(),
-                    _ => 参数.get_help().map(ToString::to_string).unwrap_or_default(),
-                };
+                let mut 帮助 = 参数.get_help().map(ToString::to_string).unwrap_or_default();
                 let 默认: Vec<_> = 参数
                     .get_default_values()
                     .iter()

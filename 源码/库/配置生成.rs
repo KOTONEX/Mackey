@@ -78,21 +78,21 @@ pub struct 探测结果 {
 }
 #[derive(Debug, Args, Default)]
 pub struct 选项 {
-    #[arg(long)]
+    #[arg(long, help = "读取指定的行为清单，默认使用内嵌清单")]
     pub 清单: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(long, help = "读取指定的用户配置文件")]
     pub 用户配置: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(long, help = "指定 xremap.json 与 relocations.json 的输出目录")]
     pub 输出目录: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(long, help = "指定行为清单文档的输出路径")]
     pub 文档: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(long, help = "指定生成文档中显示的 GNOME 键位备份路径")]
     pub 备份: Option<PathBuf>,
-    #[arg(long)]
+    #[arg(long, help = "跳过 GNOME 已占用键位的探测")]
     pub 不探测: bool,
-    #[arg(long)]
+    #[arg(long, help = "跳过行为清单文档的生成")]
     pub 不生成文档: bool,
-    #[arg(long)]
+    #[arg(long, help = "只显示生成报告，跳过文件写入")]
     pub 报告: bool,
 }
 pub fn 字符串列表(v: &Value) -> Vec<String> {

@@ -184,11 +184,22 @@ pub fn 发行包(根: &Path, 包: &Path) -> Result<()> {
         );
     }
     let 程序 = 目录.join("mackey");
-    let 版本 = Command::new(&程序).arg("--version").output()?;
+    let 版本 = Command::new(&程序)
+        .env_remove("HOME")
+        .arg("版本")
+        .output()?;
     ensure!(
         版本.status.success()
-            && String::from_utf8(版本.stdout)?.trim() == format!("mackey {}", crate::版本),
+            && String::from_utf8(版本.stdout)? == format!("mackey {}\n", crate::版本),
         "发行包版本不符"
+    );
+    let 帮助 = Command::new(&程序)
+        .env_remove("HOME")
+        .args(["帮助", "生成"])
+        .output()?;
+    ensure!(
+        帮助.status.success() && String::from_utf8(帮助.stdout)?.contains("用法：mackey 生成"),
+        "发行包无法显示子命令帮助"
     );
     let 主目录 = 临时.path().join("home");
     fs::create_dir(&主目录)?;

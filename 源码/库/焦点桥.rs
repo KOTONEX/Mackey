@@ -42,17 +42,21 @@ pub struct 焦点信息 {
 }
 #[derive(Debug, Args)]
 pub struct 选项 {
-    #[arg(long,default_value="自动",value_parser=["自动","固定","k0kubun","focused-window"])]
+    #[arg(long, default_value = "自动", value_parser = ["自动", "固定", "k0kubun", "focused-window"], help = "选择焦点信息来源")]
     pub 后端: String,
-    #[arg(long)]
+    #[arg(long, help = "指定监听的 Unix 套接字路径")]
     pub 套接字: Option<PathBuf>,
-    #[arg(long, default_value_t = 40)]
+    #[arg(long, default_value_t = 40, help = "焦点信息的缓存时长（毫秒）")]
     pub 缓存毫秒: u64,
-    #[arg(long, default_value = "mackey-固定测试应用")]
+    #[arg(
+        long,
+        default_value = "mackey-固定测试应用",
+        help = "指定固定测试后端返回的应用标识"
+    )]
     pub 固定应用: String,
-    #[arg(long)]
+    #[arg(long, help = "查询一次焦点并输出 JSON，随后退出")]
     pub 测试: bool,
-    #[arg(long)]
+    #[arg(long, help = "列出支持的焦点后端")]
     pub 列出后端: bool,
 }
 pub struct 焦点来源 {

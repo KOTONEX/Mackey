@@ -53,6 +53,8 @@ mackey 状态
 ## 常用操作
 
 ```bash
+mackey 帮助        # 查看命令总览，可加子命令查看参数
+mackey 版本        # 显示麦奇版本号
 mackey 状态        # 查看两项服务、引擎路径和扩展状态
 mackey 日志 50     # 查看焦点桥与引擎日志
 mackey 探测        # 只读检查 GNOME 键位冲突

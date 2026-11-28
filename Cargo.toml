@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 [package]
 name = "mackey"
-version = "2.5.3"
+version = "2.6.0"
 edition = "2024"
 publish = false
 license = "AGPL-3.0-or-later"
